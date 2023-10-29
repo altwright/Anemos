@@ -24,6 +24,14 @@ typedef struct QueueFamilyIndices{
     uint32_t presentQueue;
 } QueueFamilyIndices;
 
+typedef struct SwapchainDetails{
+    VkSwapchainKHR handle;
+    uint32_t imagesCount;
+    VkImage *images;//free
+    VkFormat format;
+    VkExtent2D extent;
+} SwapchainDetails;
+
 typedef struct VkState{
     VkInstance instance;
     VkSurfaceKHR surface;
@@ -31,5 +39,5 @@ typedef struct VkState{
     VkDevice logicalDevice;
     VkQueue graphicsQueue;
     VkQueue presentQueue;
-    VkSwapchainKHR swapchain;
+    SwapchainDetails swapchain;
 } VkState;

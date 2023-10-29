@@ -196,7 +196,9 @@ QueueFamilyIndices findQueueFamilyIndices(VkPhysicalDevice device, VkSurfaceKHR 
     return indices;
 }
 
-VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice, QueueFamilyIndices indices){
+VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface){
+    QueueFamilyIndices indices = findQueueFamilyIndices(physicalDevice, surface);
+
     uint32_t queueCreateInfoCount = 1;
     if (indices.graphicsQueue != indices.presentQueue){
         queueCreateInfoCount = 2;
@@ -305,7 +307,7 @@ VkExtent2D selectSwapchainExtent(GLFWwindow *window, VkSurfaceCapabilitiesKHR *c
     }
 }
 
-VkSwapchainKHR createSwapchain(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, GLFWwindow *window){
+SwapchainDetails createSwapchain(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, GLFWwindow *window){
     SwapchainSupportDetails supportDetails = querySwapchainSupport(physicalDevice, surface);
     VkSurfaceFormatKHR surfaceFormat = selectSurfaceFormat(supportDetails.formatsCount, supportDetails.formats);
     VkPresentModeKHR presentMode = selectPresentMode(supportDetails.presentModesCount, supportDetails.presentModes);
@@ -340,12 +342,19 @@ VkSwapchainKHR createSwapchain(VkDevice device, VkPhysicalDevice physicalDevice,
     else
         createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
     
-    VkSwapchainKHR swapchain;
-    if (vkCreateSwapchainKHR(device, &createInfo, NULL, &swapchain)){
+    SwapchainDetails swapchainDetails{};
+    if (vkCreateSwapchainKHR(device, &createInfo, NULL, &swapchainDetails.handle)){
         printf("Failed to create Swapchain\n");
         exit(EXIT_FAILURE);
     }
-
     destroySwapchainSupportDetails(&supportDetails);
-    return swapchain;
+
+    swapchainDetails.extent = extent;
+    swapchainDetails.format = surfaceFormat.format;
+
+    vkGetSwapchainImagesKHR(device, swapchainDetails.handle, &swapchainDetails.imagesCount, NULL);
+    swapchainDetails.images = (VkImage*)malloc(sizeof(VkImage)*swapchainDetails.imagesCount);
+    vkGetSwapchainImagesKHR(device, swapchainDetails.handle, &swapchainDetails.imagesCount, swapchainDetails.images);
+
+    return swapchainDetails;
 }

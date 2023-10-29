@@ -2,7 +2,8 @@
 #include <stdlib.h>
 
 void destroyVkState(VkState *vkstate){
-    vkDestroySwapchainKHR(vkstate->logicalDevice, vkstate->swapchain, NULL);
+    free(vkstate->swapchain.images);
+    vkDestroySwapchainKHR(vkstate->logicalDevice, vkstate->swapchain.handle, NULL);
     vkDestroyDevice(vkstate->logicalDevice, NULL);
     vkDestroySurfaceKHR(vkstate->instance, vkstate->surface, NULL);
     vkDestroyInstance(vkstate->instance, NULL);
