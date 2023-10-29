@@ -79,7 +79,7 @@ VkInstance createInstance(const char *appName, uint32_t appVersion, const char *
     return instance;
 }
 
-VkPhysicalDevice selectPhysicalDevice(VkInstance instance){
+VkPhysicalDevice selectPhysicalDevice(VkInstance instance, VkSurfaceKHR surface){
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(instance, &deviceCount, NULL);
 
@@ -97,8 +97,6 @@ VkPhysicalDevice selectPhysicalDevice(VkInstance instance){
     for (size_t i = 0; i < deviceCount; i++){
         VkPhysicalDeviceProperties deviceProperties;
         vkGetPhysicalDeviceProperties(physicalDevices[i], &deviceProperties);
-        VkPhysicalDeviceFeatures deviceFeatures;
-        vkGetPhysicalDeviceFeatures(physicalDevices[i], &deviceFeatures);
         printf("\t%s\n", deviceProperties.deviceName);
     }
     #endif
@@ -106,7 +104,7 @@ VkPhysicalDevice selectPhysicalDevice(VkInstance instance){
     //Select a dedicated GPU
     VkPhysicalDevice selectedDevice = VK_NULL_HANDLE;
     for (size_t i = 0; i < deviceCount; i++){
-        QueueFamilyIndices indices = findQueueFamilyIndices(physicalDevices[i]);
+        QueueFamilyIndices indices = findQueueFamilyIndices(physicalDevices[i], surface);
         VkPhysicalDeviceProperties deviceProperties;
         vkGetPhysicalDeviceProperties(physicalDevices[i], &deviceProperties);
         if (indices.graphicsQueue < indices.queueFamilyCount &&
@@ -119,7 +117,7 @@ VkPhysicalDevice selectPhysicalDevice(VkInstance instance){
     //If dedicated GPU not found, select integrated GPU
     if (!selectedDevice){
         for (size_t i = 0; i < deviceCount; i++){
-            QueueFamilyIndices indices = findQueueFamilyIndices(physicalDevices[i]);
+            QueueFamilyIndices indices = findQueueFamilyIndices(physicalDevices[i], surface);
             VkPhysicalDeviceProperties deviceProperties;
             vkGetPhysicalDeviceProperties(physicalDevices[i], &deviceProperties);
             if (indices.graphicsQueue < indices.queueFamilyCount &&
@@ -145,29 +143,49 @@ VkPhysicalDevice selectPhysicalDevice(VkInstance instance){
     return selectedDevice;
 }
 
-struct QueueFamilyIndices findQueueFamilyIndices(VkPhysicalDevice device){
+struct QueueFamilyIndices findQueueFamilyIndices(VkPhysicalDevice device, VkSurfaceKHR surface){
     QueueFamilyIndices indices{};
     uint32_t queueFamilyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, NULL);
 
     indices.queueFamilyCount = queueFamilyCount;
     indices.graphicsQueue = queueFamilyCount;
+    indices.presentQueue = queueFamilyCount;
 
     VkQueueFamilyProperties *queueFamilies = (VkQueueFamilyProperties*)malloc(sizeof(VkQueueFamilyProperties)*queueFamilyCount);
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies);
     
     for (size_t i = 0; i < queueFamilyCount; i++){
-        if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT){
+        VkBool32 presentSupport = false;
+        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+        if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
             indices.graphicsQueue = i;
-        }
+
+        if (presentSupport)
+            indices.presentQueue = i;
+        
+        //Prefer the queues to be the same
+        if (indices.graphicsQueue < queueFamilyCount && 
+            indices.presentQueue < queueFamilyCount &&
+            indices.graphicsQueue == indices.presentQueue
+        )
+            break;
     }
     
     free(queueFamilies);
     return indices;
 }
 
-VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice){
-    QueueFamilyIndices indices = findQueueFamilyIndices(physicalDevice);
+VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice, QueueFamilyIndices indices){
+    uint32_t queueCreateInfoCount = 1;
+    if (indices.graphicsQueue != indices.presentQueue){
+        queueCreateInfoCount = 2;
+        #ifdef NDEBUG
+        #else
+        printf("Graphics and Present Queue Families are different\n");
+        #endif
+    }
+    VkDeviceQueueCreateInfo *queueCreateInfos = (VkDeviceQueueCreateInfo*)malloc(sizeof(VkDeviceQueueCreateInfo)*queueCreateInfoCount);
 
     VkDeviceQueueCreateInfo queueCreateInfo{};
     queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
@@ -176,12 +194,19 @@ VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice){
     float queuePriority = 1.0f;
     queueCreateInfo.pQueuePriorities = &queuePriority;
 
+    queueCreateInfos[0] = queueCreateInfo;
+
+    if (indices.presentQueue != indices.graphicsQueue){
+        queueCreateInfo.queueFamilyIndex = indices.presentQueue;
+        queueCreateInfos[1] = queueCreateInfo;
+    }
+
     VkPhysicalDeviceFeatures deviceFeatures{};
 
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    createInfo.queueCreateInfoCount = 1;
-    createInfo.pQueueCreateInfos = &queueCreateInfo;
+    createInfo.queueCreateInfoCount = queueCreateInfoCount;
+    createInfo.pQueueCreateInfos = queueCreateInfos;
     createInfo.pEnabledFeatures = &deviceFeatures;
 
     VkDevice device;
@@ -189,5 +214,16 @@ VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice){
         printf("Failed to create Logical Device\n");
         exit(EXIT_FAILURE);
     }
+
+    free(queueCreateInfos);
     return device;
+}
+
+VkSurfaceKHR createSurface(VkInstance instance, GLFWwindow *window){
+    VkSurfaceKHR surface;
+    if (glfwCreateWindowSurface(instance, window, NULL, &surface)){
+        printf("Failed to create Surface\n");
+        exit(EXIT_FAILURE);
+    }
+    return surface;
 }

@@ -26,10 +26,12 @@ int main(int, char**){
         VK_MAKE_VERSION(0, 1, 0)
     );
 
-    vkstate.physicalDevice = selectPhysicalDevice(vkstate.instance);
-    vkstate.logicalDevice = createLogicalDevice(vkstate.physicalDevice);
-    QueueFamilyIndices queueFamilyIndices = findQueueFamilyIndices(vkstate.physicalDevice);
+    vkstate.surface = createSurface(vkstate.instance, window.handle);
+    vkstate.physicalDevice = selectPhysicalDevice(vkstate.instance, vkstate.surface);
+    QueueFamilyIndices queueFamilyIndices = findQueueFamilyIndices(vkstate.physicalDevice, vkstate.surface);
+    vkstate.logicalDevice = createLogicalDevice(vkstate.physicalDevice, queueFamilyIndices);
     vkGetDeviceQueue(vkstate.logicalDevice, queueFamilyIndices.graphicsQueue, 0, &vkstate.graphicsQueue);
+    vkGetDeviceQueue(vkstate.logicalDevice, queueFamilyIndices.presentQueue, 0, &vkstate.presentQueue);
 
     while (!glfwWindowShouldClose(window.handle)) {
         // Check whether the user clicked on the close button (and any other
