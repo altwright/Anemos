@@ -103,22 +103,40 @@ VkPhysicalDevice selectPhysicalDevice(VkInstance instance){
     }
     #endif
     
-    //Select physical device
+    //Select a dedicated GPU
     VkPhysicalDevice selectedDevice = VK_NULL_HANDLE;
     for (size_t i = 0; i < deviceCount; i++){
         QueueFamilyIndices indices = findQueueFamilyIndices(physicalDevices[i]);
-        if (indices.graphicsQueue < indices.queueFamilyCount){
+        VkPhysicalDeviceProperties deviceProperties;
+        vkGetPhysicalDeviceProperties(physicalDevices[i], &deviceProperties);
+        if (indices.graphicsQueue < indices.queueFamilyCount &&
+            deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU
+        ){
             selectedDevice = physicalDevices[i];
-            #ifdef NDEBUG
-            #else
-            VkPhysicalDeviceProperties deviceProperties;
-            vkGetPhysicalDeviceProperties(selectedDevice, &deviceProperties);
-            printf("Selected GPU: %s\n", deviceProperties.deviceName);
-            #endif
-            break;
         }
     }
+
+    //If dedicated GPU not found, select integrated GPU
+    if (!selectedDevice){
+        for (size_t i = 0; i < deviceCount; i++){
+            QueueFamilyIndices indices = findQueueFamilyIndices(physicalDevices[i]);
+            VkPhysicalDeviceProperties deviceProperties;
+            vkGetPhysicalDeviceProperties(physicalDevices[i], &deviceProperties);
+            if (indices.graphicsQueue < indices.queueFamilyCount &&
+                deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU){
+                selectedDevice = physicalDevices[i];
+            }
+        }
+    }
+
     free(physicalDevices);
+
+    #ifdef NDEBUG
+    #else
+    VkPhysicalDeviceProperties deviceProperties;
+    vkGetPhysicalDeviceProperties(selectedDevice, &deviceProperties);
+    printf("Selected GPU: %s\n", deviceProperties.deviceName);
+    #endif
 
     if (!selectedDevice){
         printf("No GPU is suitable\n");
