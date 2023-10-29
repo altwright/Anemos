@@ -79,6 +79,33 @@ VkInstance createInstance(const char *appName, uint32_t appVersion, const char *
     return instance;
 }
 
+bool checkPhysicalDeviceExtensionSupport(VkPhysicalDevice device){
+    uint32_t extCount = 0;
+    vkEnumerateDeviceExtensionProperties(device, NULL, &extCount, NULL);
+    VkExtensionProperties *extProperties = (VkExtensionProperties*)malloc(sizeof(VkExtensionProperties)*extCount);
+    vkEnumerateDeviceExtensionProperties(device, NULL, &extCount, extProperties);
+
+    size_t remainingExtensions = DEVICE_EXTENSIONS_COUNT;
+    for (size_t i = 0; i < extCount; i++){
+        for (size_t j = 0; j < DEVICE_EXTENSIONS_COUNT; j++){
+            if (!strcmp(extProperties[i].extensionName, DEVICE_EXTENSIONS[j])){
+                remainingExtensions--;
+                break;
+            }
+        }
+
+        if (!remainingExtensions)
+            break;
+    }
+    
+    free(extProperties);
+
+    if (remainingExtensions)
+        return false;
+    else
+        return true;
+}
+
 VkPhysicalDevice selectPhysicalDevice(VkInstance instance, VkSurfaceKHR surface){
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(instance, &deviceCount, NULL);
@@ -108,21 +135,27 @@ VkPhysicalDevice selectPhysicalDevice(VkInstance instance, VkSurfaceKHR surface)
         VkPhysicalDeviceProperties deviceProperties;
         vkGetPhysicalDeviceProperties(physicalDevices[i], &deviceProperties);
         if (indices.graphicsQueue < indices.queueFamilyCount &&
-            deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU
+            indices.presentQueue < indices.queueFamilyCount &&
+            deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
+            checkPhysicalDeviceExtensionSupport(physicalDevices[i])
         ){
             selectedDevice = physicalDevices[i];
+            break;
         }
     }
 
-    //If dedicated GPU not found, select integrated GPU
-    if (!selectedDevice){
+    if (!selectedDevice){//Select an iGPU instead
         for (size_t i = 0; i < deviceCount; i++){
             QueueFamilyIndices indices = findQueueFamilyIndices(physicalDevices[i], surface);
             VkPhysicalDeviceProperties deviceProperties;
             vkGetPhysicalDeviceProperties(physicalDevices[i], &deviceProperties);
             if (indices.graphicsQueue < indices.queueFamilyCount &&
-                deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU){
+                indices.presentQueue < indices.queueFamilyCount &&
+                deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU &&
+                checkPhysicalDeviceExtensionSupport(physicalDevices[i])
+            ){
                 selectedDevice = physicalDevices[i];
+                break;
             }
         }
     }
@@ -207,6 +240,8 @@ VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice, QueueFamilyIndices
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     createInfo.queueCreateInfoCount = queueCreateInfoCount;
     createInfo.pQueueCreateInfos = queueCreateInfos;
+    createInfo.enabledExtensionCount = DEVICE_EXTENSIONS_COUNT;
+    createInfo.ppEnabledExtensionNames = DEVICE_EXTENSIONS;
     createInfo.pEnabledFeatures = &deviceFeatures;
 
     VkDevice device;
