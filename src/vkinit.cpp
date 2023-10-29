@@ -4,8 +4,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <algorithm>
 #include "vkinit.h"
 #include "vkstate.h"
+#include "vkdestroy.h"
 
 VkInstance createInstance(const char *appName, uint32_t appVersion, const char *engineName, uint32_t engineVersion){
     VkApplicationInfo appInfo{
@@ -128,35 +130,20 @@ VkPhysicalDevice selectPhysicalDevice(VkInstance instance, VkSurfaceKHR surface)
     }
     #endif
     
-    //Select a dedicated GPU
     VkPhysicalDevice selectedDevice = VK_NULL_HANDLE;
     for (size_t i = 0; i < deviceCount; i++){
         QueueFamilyIndices indices = findQueueFamilyIndices(physicalDevices[i], surface);
-        VkPhysicalDeviceProperties deviceProperties;
-        vkGetPhysicalDeviceProperties(physicalDevices[i], &deviceProperties);
         if (indices.graphicsQueue < indices.queueFamilyCount &&
             indices.presentQueue < indices.queueFamilyCount &&
-            deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
             checkPhysicalDeviceExtensionSupport(physicalDevices[i])
         ){
-            selectedDevice = physicalDevices[i];
-            break;
-        }
-    }
-
-    if (!selectedDevice){//Select an iGPU instead
-        for (size_t i = 0; i < deviceCount; i++){
-            QueueFamilyIndices indices = findQueueFamilyIndices(physicalDevices[i], surface);
-            VkPhysicalDeviceProperties deviceProperties;
-            vkGetPhysicalDeviceProperties(physicalDevices[i], &deviceProperties);
-            if (indices.graphicsQueue < indices.queueFamilyCount &&
-                indices.presentQueue < indices.queueFamilyCount &&
-                deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU &&
-                checkPhysicalDeviceExtensionSupport(physicalDevices[i])
-            ){
+            SwapchainSupportDetails swapchainSupport = querySwapchainSupport(physicalDevices[i], surface);
+            if (swapchainSupport.formatsCount > 0 && swapchainSupport.presentModesCount > 0){
                 selectedDevice = physicalDevices[i];
+                destroySwapchainSupportDetails(&swapchainSupport);
                 break;
             }
+            destroySwapchainSupportDetails(&swapchainSupport);
         }
     }
 
@@ -176,7 +163,7 @@ VkPhysicalDevice selectPhysicalDevice(VkInstance instance, VkSurfaceKHR surface)
     return selectedDevice;
 }
 
-struct QueueFamilyIndices findQueueFamilyIndices(VkPhysicalDevice device, VkSurfaceKHR surface){
+QueueFamilyIndices findQueueFamilyIndices(VkPhysicalDevice device, VkSurfaceKHR surface){
     QueueFamilyIndices indices{};
     uint32_t queueFamilyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, NULL);
@@ -261,4 +248,104 @@ VkSurfaceKHR createSurface(VkInstance instance, GLFWwindow *window){
         exit(EXIT_FAILURE);
     }
     return surface;
+}
+
+SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice device, VkSurfaceKHR surface){
+    SwapchainSupportDetails details{};
+    if(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities)){
+        printf("Failed to get Surface capabilities\n");
+        exit(EXIT_FAILURE);
+    }
+
+    vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &details.formatsCount, NULL);
+    details.formats = (VkSurfaceFormatKHR*)malloc(sizeof(VkSurfaceFormatKHR)*details.formatsCount);
+    vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &details.formatsCount, details.formats);
+
+    vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &details.presentModesCount, NULL);
+    details.presentModes = (VkPresentModeKHR*)malloc(sizeof(VkPresentModeKHR)*details.presentModesCount);
+    vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &details.presentModesCount, details.presentModes);
+
+    return details;
+}
+
+VkSurfaceFormatKHR selectSurfaceFormat(uint32_t formatsCount, VkSurfaceFormatKHR *availableFormats){
+    for (size_t i = 0; i < formatsCount; i++){
+        if (availableFormats[i].format == VK_FORMAT_B8G8R8A8_SRGB && availableFormats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+            return availableFormats[i];
+    }
+    
+    return availableFormats[0];
+}
+
+VkPresentModeKHR selectPresentMode(uint32_t presentModesCount, VkPresentModeKHR *availablePresentModes){
+    for (size_t i = 0; i < presentModesCount; i++){
+        if (availablePresentModes[i] == VK_PRESENT_MODE_MAILBOX_KHR)
+            return availablePresentModes[i];
+    }
+    
+    return VK_PRESENT_MODE_FIFO_KHR;
+}
+
+VkExtent2D selectSwapchainExtent(GLFWwindow *window, VkSurfaceCapabilitiesKHR *capabilities){
+    if (capabilities->currentExtent.width != UINT32_MAX)
+        return capabilities->currentExtent;
+    else{
+        int width, height;
+        glfwGetFramebufferSize(window, &width, &height);
+
+        VkExtent2D actualExtent = {
+            .width = (uint32_t)width,
+            .height = (uint32_t)height
+        };
+
+        actualExtent.width = std::clamp(actualExtent.width, capabilities->minImageExtent.width, capabilities->maxImageExtent.width);
+        actualExtent.height = std::clamp(actualExtent.height, capabilities->minImageExtent.height, capabilities->maxImageExtent.height);
+
+        return actualExtent;
+    }
+}
+
+VkSwapchainKHR createSwapchain(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, GLFWwindow *window){
+    SwapchainSupportDetails supportDetails = querySwapchainSupport(physicalDevice, surface);
+    VkSurfaceFormatKHR surfaceFormat = selectSurfaceFormat(supportDetails.formatsCount, supportDetails.formats);
+    VkPresentModeKHR presentMode = selectPresentMode(supportDetails.presentModesCount, supportDetails.presentModes);
+    VkExtent2D extent = selectSwapchainExtent(window, &supportDetails.capabilities);
+
+    uint32_t imageCount = supportDetails.capabilities.minImageCount + 1;
+    if (supportDetails.capabilities.maxImageCount > 0 && imageCount > supportDetails.capabilities.maxImageCount)
+        imageCount = supportDetails.capabilities.maxImageCount;
+    
+    VkSwapchainCreateInfoKHR createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    createInfo.surface = surface;
+    createInfo.minImageCount = imageCount;
+    createInfo.imageFormat = surfaceFormat.format;
+    createInfo.imageColorSpace = surfaceFormat.colorSpace;
+    createInfo.imageExtent = extent;
+    createInfo.imageArrayLayers = 1;
+    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    createInfo.preTransform = supportDetails.capabilities.currentTransform;
+    createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    createInfo.presentMode = presentMode;
+    createInfo.clipped = VK_TRUE;
+    createInfo.oldSwapchain = VK_NULL_HANDLE;
+
+    QueueFamilyIndices queueFamilyIndices = findQueueFamilyIndices(physicalDevice, surface);
+    uint32_t indices[] = {queueFamilyIndices.graphicsQueue, queueFamilyIndices.presentQueue};
+    if (queueFamilyIndices.graphicsQueue != queueFamilyIndices.presentQueue){
+        createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+        createInfo.queueFamilyIndexCount = 2;
+        createInfo.pQueueFamilyIndices = indices;
+    }
+    else
+        createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    
+    VkSwapchainKHR swapchain;
+    if (vkCreateSwapchainKHR(device, &createInfo, NULL, &swapchain)){
+        printf("Failed to create Swapchain\n");
+        exit(EXIT_FAILURE);
+    }
+
+    destroySwapchainSupportDetails(&supportDetails);
+    return swapchain;
 }

@@ -7,12 +7,15 @@ extern const char* VALIDATION_LAYERS[VALIDATION_LAYERS_COUNT];
 #define DEVICE_EXTENSIONS_COUNT 1
 extern const char* DEVICE_EXTENSIONS[DEVICE_EXTENSIONS_COUNT];
 
+/**
+ * @brief Must call destroySwapchainSupportDetails() after
+ */
 typedef struct SwapchainSupportDetails{
     VkSurfaceCapabilitiesKHR capabilities;
-    size_t formatsLen;
-    VkSurfaceFormatKHR *formats;
-    size_t presentModesLen;
-    VkPresentModeKHR *presentModes;
+    uint32_t formatsCount;
+    VkSurfaceFormatKHR *formats;//free
+    uint32_t presentModesCount;
+    VkPresentModeKHR *presentModes;//free
 } SwapchainSupportDetails;
 
 typedef struct QueueFamilyIndices{
@@ -28,4 +31,5 @@ typedef struct VkState{
     VkDevice logicalDevice;
     VkQueue graphicsQueue;
     VkQueue presentQueue;
+    VkSwapchainKHR swapchain;
 } VkState;
