@@ -4,24 +4,36 @@
 #include <vulkan/vulkan.h>
 #include <stdlib.h>
 #include "window.h"
+#include "vkstate.h"
+#include "vkinit.h"
+#include "vkdestroy.h"
 
 #define WIDTH 640
 #define HEIGHT 480
 
 int main(int, char**){
-    GLFWwindow *window = createWindow(WIDTH, HEIGHT, "Anemos");
-    if (!window){
+    Window window = {};
+    if (!createWindow(WIDTH, HEIGHT, "Anemos", &window)){
         printf("Failed to create GLFW window!");
         return EXIT_FAILURE;
     }
 
-    while (!glfwWindowShouldClose(window)) {
+    VkState vkstate = {};
+    vkstate.instance = createInstance(
+        "Anemos", 
+        VK_MAKE_VERSION(0, 1, 0),
+        "Moebius",
+        VK_MAKE_VERSION(0, 1, 0)
+    );
+
+    while (!glfwWindowShouldClose(window.handle)) {
         // Check whether the user clicked on the close button (and any other
         // mouse/key event, which we don't use so far)
         glfwPollEvents();
     }
 
-    destroyWindow(window);
+    destroyWindow(&window);
+    destroyVkState(&vkstate);
 
     return 0;
 }
