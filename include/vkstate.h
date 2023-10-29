@@ -12,5 +12,6 @@ typedef struct QueueFamilyIndices{
 typedef struct VkState{
     VkInstance instance;
     VkPhysicalDevice physicalDevice;
-    QueueFamilyIndices queueFamilyIndices;
+    VkDevice logicalDevice;
+    VkQueue graphicsQueue;
 } VkState;

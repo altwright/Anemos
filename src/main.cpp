@@ -27,7 +27,9 @@ int main(int, char**){
     );
 
     vkstate.physicalDevice = selectPhysicalDevice(vkstate.instance);
-    vkstate.queueFamilyIndices = findQueueFamilyIndices(vkstate.physicalDevice);
+    vkstate.logicalDevice = createLogicalDevice(vkstate.physicalDevice);
+    QueueFamilyIndices queueFamilyIndices = findQueueFamilyIndices(vkstate.physicalDevice);
+    vkGetDeviceQueue(vkstate.logicalDevice, queueFamilyIndices.graphicsQueue, 0, &vkstate.graphicsQueue);
 
     while (!glfwWindowShouldClose(window.handle)) {
         // Check whether the user clicked on the close button (and any other

@@ -36,7 +36,7 @@ VkInstance createInstance(const char *appName, uint32_t appVersion, const char *
     }
     #endif
 
-    VkInstanceCreateInfo createInfo = {};
+    VkInstanceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     createInfo.pApplicationInfo = &appInfo;
     createInfo.enabledExtensionCount = glfwExtensionCount;
@@ -146,7 +146,7 @@ VkPhysicalDevice selectPhysicalDevice(VkInstance instance){
 }
 
 struct QueueFamilyIndices findQueueFamilyIndices(VkPhysicalDevice device){
-    QueueFamilyIndices indices = {};
+    QueueFamilyIndices indices{};
     uint32_t queueFamilyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, NULL);
 
@@ -164,4 +164,30 @@ struct QueueFamilyIndices findQueueFamilyIndices(VkPhysicalDevice device){
     
     free(queueFamilies);
     return indices;
+}
+
+VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice){
+    QueueFamilyIndices indices = findQueueFamilyIndices(physicalDevice);
+
+    VkDeviceQueueCreateInfo queueCreateInfo{};
+    queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    queueCreateInfo.queueFamilyIndex = indices.graphicsQueue;//Expected to be available
+    queueCreateInfo.queueCount = 1;
+    float queuePriority = 1.0f;
+    queueCreateInfo.pQueuePriorities = &queuePriority;
+
+    VkPhysicalDeviceFeatures deviceFeatures{};
+
+    VkDeviceCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    createInfo.queueCreateInfoCount = 1;
+    createInfo.pQueueCreateInfos = &queueCreateInfo;
+    createInfo.pEnabledFeatures = &deviceFeatures;
+
+    VkDevice device;
+    if (vkCreateDevice(physicalDevice, &createInfo, NULL, &device)){
+        printf("Failed to create Logical Device\n");
+        exit(EXIT_FAILURE);
+    }
+    return device;
 }
