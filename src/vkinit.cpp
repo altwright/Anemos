@@ -78,3 +78,36 @@ VkInstance createInstance(const char *appName, uint32_t appVersion, const char *
     free(extProperties);
     return instance;
 }
+
+VkPhysicalDevice selectPhysicalDevice(VkInstance instance){
+    uint32_t deviceCount = 0;
+    vkEnumeratePhysicalDevices(instance, &deviceCount, NULL);
+
+    if (!deviceCount){
+        printf("Failed to find Vulkan-capable GPU\n");
+        exit(EXIT_FAILURE);
+    }
+
+    VkPhysicalDevice *physicalDevices = (VkPhysicalDevice*)malloc(sizeof(VkPhysicalDevice)*deviceCount);
+    vkEnumeratePhysicalDevices(instance, &deviceCount, physicalDevices);
+
+    #ifdef NDEBUG
+    #else
+    printf("Vulkan-capable GPUs:\n");
+    for (size_t i = 0; i < deviceCount; i++){
+        VkPhysicalDeviceProperties deviceProperties;
+        vkGetPhysicalDeviceProperties(physicalDevices[i], &deviceProperties);
+        VkPhysicalDeviceFeatures deviceFeatures;
+        vkGetPhysicalDeviceFeatures(physicalDevices[i], &deviceFeatures);
+        printf("\t%s", deviceProperties.deviceName);
+        if (i == 0)
+            printf(" [SELECTED]\n");
+        else
+            printf("\n");
+    }
+    #endif
+    
+    VkPhysicalDevice selectedDevice = physicalDevices[0];
+    free(physicalDevices);
+    return selectedDevice;
+}

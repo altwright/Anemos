@@ -26,6 +26,8 @@ int main(int, char**){
         VK_MAKE_VERSION(0, 1, 0)
     );
 
+    vkstate.physicalDevice = selectPhysicalDevice(vkstate.instance);
+
     while (!glfwWindowShouldClose(window.handle)) {
         // Check whether the user clicked on the close button (and any other
         // mouse/key event, which we don't use so far)
