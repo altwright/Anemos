@@ -3,29 +3,16 @@
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
 #include <stdlib.h>
+#include "window.h"
 
 #define WIDTH 640
 #define HEIGHT 480
 
 int main(int, char**){
-    if (glfwPlatformSupported(GLFW_PLATFORM_WAYLAND)){
-        printf("GLFW: Wayland supported\n");
-        glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_WAYLAND);
-    }
-
-    if (!glfwInit()) {
-        printf("Could not initialise GLFW!\n");
-        return -1;
-    }
-
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-    glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
-    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Anemos", NULL, NULL);
+    GLFWwindow *window = createWindow(WIDTH, HEIGHT, "Anemos");
     if (!window){
-        printf("Could not open window!\n");
-        glfwTerminate();
-        return -1;
+        printf("Failed to create GLFW window!");
+        return EXIT_FAILURE;
     }
 
     while (!glfwWindowShouldClose(window)) {
@@ -34,8 +21,7 @@ int main(int, char**){
         glfwPollEvents();
     }
 
-    glfwDestroyWindow(window);
-    glfwTerminate();
+    destroyWindow(window);
 
     return 0;
 }
