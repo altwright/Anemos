@@ -5,7 +5,7 @@
 extern const char* VALIDATION_LAYERS[VALIDATION_LAYERS_COUNT];
 
 typedef struct QueueFamilyIndices{
-    bool graphicsQueuePresent;
+    uint32_t queueFamilyCount;
     uint32_t graphicsQueue;
 } QueueFamilyIndices;
 

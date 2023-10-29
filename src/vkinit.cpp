@@ -99,15 +99,51 @@ VkPhysicalDevice selectPhysicalDevice(VkInstance instance){
         vkGetPhysicalDeviceProperties(physicalDevices[i], &deviceProperties);
         VkPhysicalDeviceFeatures deviceFeatures;
         vkGetPhysicalDeviceFeatures(physicalDevices[i], &deviceFeatures);
-        printf("\t%s", deviceProperties.deviceName);
-        if (i == 0)
-            printf(" [SELECTED]\n");
-        else
-            printf("\n");
+        printf("\t%s\n", deviceProperties.deviceName);
     }
     #endif
     
-    VkPhysicalDevice selectedDevice = physicalDevices[0];
+    //Select physical device
+    VkPhysicalDevice selectedDevice = VK_NULL_HANDLE;
+    for (size_t i = 0; i < deviceCount; i++){
+        QueueFamilyIndices indices = findQueueFamilyIndices(physicalDevices[i]);
+        if (indices.graphicsQueue < indices.queueFamilyCount){
+            selectedDevice = physicalDevices[i];
+            #ifdef NDEBUG
+            #else
+            VkPhysicalDeviceProperties deviceProperties;
+            vkGetPhysicalDeviceProperties(selectedDevice, &deviceProperties);
+            printf("Selected GPU: %s\n", deviceProperties.deviceName);
+            #endif
+            break;
+        }
+    }
     free(physicalDevices);
+
+    if (!selectedDevice){
+        printf("No GPU is suitable\n");
+        exit(EXIT_FAILURE);
+    }
     return selectedDevice;
+}
+
+struct QueueFamilyIndices findQueueFamilyIndices(VkPhysicalDevice device){
+    QueueFamilyIndices indices = {};
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, NULL);
+
+    indices.queueFamilyCount = queueFamilyCount;
+    indices.graphicsQueue = queueFamilyCount;
+
+    VkQueueFamilyProperties *queueFamilies = (VkQueueFamilyProperties*)malloc(sizeof(VkQueueFamilyProperties)*queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies);
+    
+    for (size_t i = 0; i < queueFamilyCount; i++){
+        if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT){
+            indices.graphicsQueue = i;
+        }
+    }
+    
+    free(queueFamilies);
+    return indices;
 }
