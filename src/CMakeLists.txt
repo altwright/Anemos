@@ -4,4 +4,5 @@ target_sources(anemos PRIVATE
     vkinit.cpp
     vkstate.cpp
     vkdestroy.cpp
+    load.cpp
 )

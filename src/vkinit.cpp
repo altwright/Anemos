@@ -381,3 +381,7 @@ SwapchainDetails createSwapchain(VkDevice device, VkPhysicalDevice physicalDevic
 
     return swapchainDetails;
 }
+
+void createGraphicsPipeline(){
+
+}
