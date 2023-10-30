@@ -8,6 +8,7 @@
 #include "vkinit.h"
 #include "vkstate.h"
 #include "vkdestroy.h"
+#include "load.h"
 
 VkInstance createInstance(const char *appName, uint32_t appVersion, const char *engineName, uint32_t engineVersion){
     VkApplicationInfo appInfo{
@@ -382,6 +383,35 @@ SwapchainDetails createSwapchain(VkDevice device, VkPhysicalDevice physicalDevic
     return swapchainDetails;
 }
 
-void createGraphicsPipeline(){
+VkShaderModule createShaderModule(VkDevice device, uint32_t *code, size_t numBytes){
+    VkShaderModuleCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    createInfo.codeSize = numBytes;
+    createInfo.pCode = code;
 
+    VkShaderModule module;
+    if (vkCreateShaderModule(device, &createInfo, NULL, &module)){
+        printf("Failed to create Shader Module of byte size %ld\n", numBytes);
+        exit(EXIT_FAILURE);
+    }
+
+    return module;
+}
+
+void createGraphicsPipeline(VkDevice device){
+    #ifdef NDEBUG
+    FileContents vertShader = readFileContents("shaders/vert.spv");
+    FileContents fragShader = readFileContents("shaders/frag.spv");
+    #else
+    FileContents vertShader = readFileContents("../shaders/vert.spv");
+    FileContents fragShader = readFileContents("../shaders/frag.spv");
+    #endif
+
+    VkShaderModule vertShaderModule = createShaderModule(device, (uint32_t*)vertShader.bytes, vertShader.len);
+    VkShaderModule fragShaderModule = createShaderModule(device, (uint32_t*)fragShader.bytes, fragShader.len);
+
+    free(vertShader.bytes);
+    free(fragShader.bytes);
+    vkDestroyShaderModule(device, vertShaderModule, NULL);
+    vkDestroyShaderModule(device, fragShaderModule, NULL);
 }

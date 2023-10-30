@@ -28,6 +28,8 @@ int main(int, char**){
     vkGetDeviceQueue(vkstate.logicalDevice, queueFamilyIndices.presentQueue, 0, &vkstate.presentQueue);
     vkstate.swapchain = createSwapchain(vkstate.logicalDevice, vkstate.physicalDevice, vkstate.surface, window.handle);
 
+    createGraphicsPipeline(vkstate.logicalDevice);
+
     while (!glfwWindowShouldClose(window.handle)) {
         // Check whether the user clicked on the close button (and any other
         // mouse/key event, which we don't use so far)
