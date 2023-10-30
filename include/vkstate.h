@@ -28,6 +28,7 @@ typedef struct SwapchainDetails{
     VkSwapchainKHR handle;
     uint32_t imagesCount;
     VkImage *images;//free
+    VkImageView *imageViews;//free
     VkFormat format;
     VkExtent2D extent;
 } SwapchainDetails;

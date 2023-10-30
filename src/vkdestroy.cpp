@@ -2,6 +2,10 @@
 #include <stdlib.h>
 
 void destroyVkState(VkState *vkstate){
+
+    for (size_t i = 0; i < vkstate->swapchain.imagesCount; i++)
+        vkDestroyImageView(vkstate->logicalDevice, vkstate->swapchain.imageViews[i], NULL);
+    free(vkstate->swapchain.imageViews);
     free(vkstate->swapchain.images);
     vkDestroySwapchainKHR(vkstate->logicalDevice, vkstate->swapchain.handle, NULL);
     vkDestroyDevice(vkstate->logicalDevice, NULL);

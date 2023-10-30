@@ -356,5 +356,28 @@ SwapchainDetails createSwapchain(VkDevice device, VkPhysicalDevice physicalDevic
     swapchainDetails.images = (VkImage*)malloc(sizeof(VkImage)*swapchainDetails.imagesCount);
     vkGetSwapchainImagesKHR(device, swapchainDetails.handle, &swapchainDetails.imagesCount, swapchainDetails.images);
 
+    swapchainDetails.imageViews = (VkImageView*)malloc(sizeof(VkImageView)*swapchainDetails.imagesCount);
+    for (size_t i = 0; i < swapchainDetails.imagesCount; i++){
+        VkImageViewCreateInfo viewInfo{};
+        viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        viewInfo.image = swapchainDetails.images[i];
+        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        viewInfo.format = swapchainDetails.format;
+        viewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+        viewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+        viewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+        viewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+        viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        viewInfo.subresourceRange.baseMipLevel = 0;
+        viewInfo.subresourceRange.levelCount = 1;
+        viewInfo.subresourceRange.baseArrayLayer = 0;
+        viewInfo.subresourceRange.layerCount = 1;
+
+        if (vkCreateImageView(device, &viewInfo, NULL, &swapchainDetails.imageViews[i])){
+            printf("Failed to create Swapchain Image View %ld\n", i);
+            exit(EXIT_FAILURE);
+        }
+    }
+
     return swapchainDetails;
 }

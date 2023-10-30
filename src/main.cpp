@@ -18,14 +18,8 @@ int main(int, char**){
         return EXIT_FAILURE;
     }
 
-    VkState vkstate = {};
-    vkstate.instance = createInstance(
-        "Anemos", 
-        VK_MAKE_VERSION(0, 1, 0),
-        "Moebius",
-        VK_MAKE_VERSION(0, 1, 0)
-    );
-
+    VkState vkstate{};
+    vkstate.instance = createInstance("Anemos", VK_MAKE_VERSION(0, 1, 0), "Moebius", VK_MAKE_VERSION(0, 1, 0));
     vkstate.surface = createSurface(vkstate.instance, window.handle);
     vkstate.physicalDevice = selectPhysicalDevice(vkstate.instance, vkstate.surface);
     vkstate.logicalDevice = createLogicalDevice(vkstate.physicalDevice, vkstate.surface);
