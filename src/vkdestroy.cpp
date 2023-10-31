@@ -2,6 +2,8 @@
 #include <stdlib.h>
 
 void destroyVkState(VkState *vkstate){
+    vkDestroyCommandPool(vkstate->logicalDevice, vkstate->commandBuffers.pool, NULL);
+
     vkDestroyPipeline(vkstate->logicalDevice, vkstate->pipeline.handle, NULL);
     vkDestroyPipelineLayout(vkstate->logicalDevice, vkstate->pipeline.layout, NULL);
 

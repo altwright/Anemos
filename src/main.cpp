@@ -22,14 +22,15 @@ int main(int, char**){
     vkstate.instance = createInstance("Anemos", VK_MAKE_VERSION(0, 1, 0), "Moebius", VK_MAKE_VERSION(0, 1, 0));
     vkstate.surface = createSurface(vkstate.instance, window.handle);
     vkstate.physicalDevice = selectPhysicalDevice(vkstate.instance, vkstate.surface);
-    vkstate.logicalDevice = createLogicalDevice(vkstate.physicalDevice, vkstate.surface);
     QueueFamilyIndices queueFamilyIndices = findQueueFamilyIndices(vkstate.physicalDevice, vkstate.surface);
+    vkstate.logicalDevice = createLogicalDevice(vkstate.physicalDevice, queueFamilyIndices);
     vkGetDeviceQueue(vkstate.logicalDevice, queueFamilyIndices.graphicsQueue, 0, &vkstate.graphicsQueue);
     vkGetDeviceQueue(vkstate.logicalDevice, queueFamilyIndices.presentQueue, 0, &vkstate.presentQueue);
     vkstate.swapchain = createSwapchain(vkstate.logicalDevice, vkstate.physicalDevice, vkstate.surface, window.handle);
     vkstate.renderPass = createRenderPass(vkstate.logicalDevice, &vkstate.swapchain);
     vkstate.pipeline = createGraphicsPipeline(vkstate.logicalDevice, vkstate.renderPass, &vkstate.swapchain);
     vkstate.framebuffers = createFramebuffers(vkstate.logicalDevice, vkstate.renderPass, &vkstate.swapchain);
+    vkstate.commandBuffers = createCommandBuffer(vkstate.logicalDevice, queueFamilyIndices);
 
     while (!glfwWindowShouldClose(window.handle)) {
         // Check whether the user clicked on the close button (and any other

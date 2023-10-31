@@ -197,9 +197,7 @@ QueueFamilyIndices findQueueFamilyIndices(VkPhysicalDevice device, VkSurfaceKHR 
     return indices;
 }
 
-VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface){
-    QueueFamilyIndices indices = findQueueFamilyIndices(physicalDevice, surface);
-
+VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice, QueueFamilyIndices indices){
     uint32_t queueCreateInfoCount = 1;
     if (indices.graphicsQueue != indices.presentQueue){
         queueCreateInfoCount = 2;
@@ -624,4 +622,30 @@ Framebuffers createFramebuffers(VkDevice device, VkRenderPass renderPass, const 
     }
 
     return framebuffers;
+}
+
+CommandBufferDetails createCommandBuffer(VkDevice device, QueueFamilyIndices indices){
+    VkCommandPoolCreateInfo poolInfo{};
+    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    poolInfo.queueFamilyIndex = indices.graphicsQueue;
+
+    CommandBufferDetails commandBuffer{};
+    if (vkCreateCommandPool(device, &poolInfo, NULL, &commandBuffer.pool)){
+        printf("Failed to create Command Pool\n");
+        exit(EXIT_FAILURE);
+    }
+
+    VkCommandBufferAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.commandPool = commandBuffer.pool;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandBufferCount = 1;
+
+    if (vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer.handle)){
+        printf("Failed to create Command Buffer\n");
+        exit(EXIT_FAILURE);
+    }
+
+    return commandBuffer;
 }

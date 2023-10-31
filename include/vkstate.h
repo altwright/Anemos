@@ -43,6 +43,11 @@ typedef struct Framebuffers{
     VkFramebuffer *handles;//free
 } Framebuffers;
 
+typedef struct CommandBufferDetails{
+    VkCommandPool pool;
+    VkCommandBuffer handle;
+} CommandBufferDetails;
+
 typedef struct VkState{
     VkInstance instance;
     VkSurfaceKHR surface;
@@ -54,4 +59,5 @@ typedef struct VkState{
     VkRenderPass renderPass;
     PipelineDetails pipeline;
     Framebuffers framebuffers;
+    CommandBufferDetails commandBuffers;
 } VkState;
