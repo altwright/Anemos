@@ -38,6 +38,11 @@ typedef struct PipelineDetails{
     VkPipelineLayout layout;
 } PipelineDetails;
 
+typedef struct Framebuffers{
+    size_t count;
+    VkFramebuffer *handles;//free
+} Framebuffers;
+
 typedef struct VkState{
     VkInstance instance;
     VkSurfaceKHR surface;
@@ -48,4 +53,5 @@ typedef struct VkState{
     SwapchainDetails swapchain;
     VkRenderPass renderPass;
     PipelineDetails pipeline;
+    Framebuffers framebuffers;
 } VkState;

@@ -597,3 +597,31 @@ PipelineDetails createGraphicsPipeline(VkDevice device, VkRenderPass renderPass,
 
     return pipelineDetails;
 }
+
+Framebuffers createFramebuffers(VkDevice device, VkRenderPass renderPass, const SwapchainDetails *swapchainDetails){
+    Framebuffers framebuffers{};
+    framebuffers.count = swapchainDetails->imagesCount;
+    framebuffers.handles = (VkFramebuffer*)malloc(sizeof(VkFramebuffer)*framebuffers.count);
+
+    for(size_t i = 0; i < framebuffers.count; i++){
+        VkFramebufferCreateInfo framebufferInfo{};
+        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebufferInfo.renderPass = renderPass;
+        //You can only use a framebuffer with the render passes that it is compatible 
+        //with, which roughly means that they use the same number and type of attachments.
+        framebufferInfo.attachmentCount = 1;
+        framebufferInfo.pAttachments = &swapchainDetails->imageViews[i];
+        //The attachmentCount and pAttachments parameters specify the VkImageView objects 
+        //that should be bound to the respective attachment descriptions in the render pass pAttachment array.
+        framebufferInfo.width = swapchainDetails->extent.width;
+        framebufferInfo.height = swapchainDetails->extent.height;
+        framebufferInfo.layers = 1;
+
+        if (vkCreateFramebuffer(device, &framebufferInfo, NULL, &framebuffers.handles[i])){
+            printf("Failed to create Framebuffer %ld\n", i);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    return framebuffers;
+}

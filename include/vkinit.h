@@ -11,3 +11,4 @@ SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice device, VkSurface
 SwapchainDetails createSwapchain(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, GLFWwindow *window);
 VkRenderPass createRenderPass(VkDevice device, const SwapchainDetails *swapchainDetails);
 PipelineDetails createGraphicsPipeline(VkDevice device, VkRenderPass renderPass, const SwapchainDetails *swapchainDetails);
+Framebuffers createFramebuffers(VkDevice device, VkRenderPass renderPass, const SwapchainDetails *swapchainDetails);

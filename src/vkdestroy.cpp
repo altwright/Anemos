@@ -5,6 +5,10 @@ void destroyVkState(VkState *vkstate){
     vkDestroyPipeline(vkstate->logicalDevice, vkstate->pipeline.handle, NULL);
     vkDestroyPipelineLayout(vkstate->logicalDevice, vkstate->pipeline.layout, NULL);
 
+    for(size_t i = 0; i <vkstate->framebuffers.count; i++)
+        vkDestroyFramebuffer(vkstate->logicalDevice, vkstate->framebuffers.handles[i], NULL);
+    free(vkstate->framebuffers.handles);
+
     vkDestroyRenderPass(vkstate->logicalDevice, vkstate->renderPass, NULL);
 
     for (size_t i = 0; i < vkstate->swapchain.imagesCount; i++)
