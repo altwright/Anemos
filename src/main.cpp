@@ -27,8 +27,8 @@ int main(int, char**){
     vkGetDeviceQueue(vkstate.logicalDevice, queueFamilyIndices.graphicsQueue, 0, &vkstate.graphicsQueue);
     vkGetDeviceQueue(vkstate.logicalDevice, queueFamilyIndices.presentQueue, 0, &vkstate.presentQueue);
     vkstate.swapchain = createSwapchain(vkstate.logicalDevice, vkstate.physicalDevice, vkstate.surface, window.handle);
-
-    createGraphicsPipeline(vkstate.logicalDevice);
+    vkstate.renderPass = createRenderPass(vkstate.logicalDevice, &vkstate.swapchain);
+    vkstate.pipeline = createGraphicsPipeline(vkstate.logicalDevice, vkstate.renderPass, &vkstate.swapchain);
 
     while (!glfwWindowShouldClose(window.handle)) {
         // Check whether the user clicked on the close button (and any other

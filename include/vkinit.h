@@ -9,4 +9,5 @@ VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR surfa
 VkSurfaceKHR createSurface(VkInstance instance, GLFWwindow *window);
 SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice device, VkSurfaceKHR surface);
 SwapchainDetails createSwapchain(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, GLFWwindow *window);
-void createGraphicsPipeline(VkDevice device);
+VkRenderPass createRenderPass(VkDevice device, const SwapchainDetails *swapchainDetails);
+PipelineDetails createGraphicsPipeline(VkDevice device, VkRenderPass renderPass, const SwapchainDetails *swapchainDetails);

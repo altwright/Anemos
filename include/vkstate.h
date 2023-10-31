@@ -33,6 +33,11 @@ typedef struct SwapchainDetails{
     VkExtent2D extent;
 } SwapchainDetails;
 
+typedef struct PipelineDetails{
+    VkPipeline handle;
+    VkPipelineLayout layout;
+} PipelineDetails;
+
 typedef struct VkState{
     VkInstance instance;
     VkSurfaceKHR surface;
@@ -41,4 +46,6 @@ typedef struct VkState{
     VkQueue graphicsQueue;
     VkQueue presentQueue;
     SwapchainDetails swapchain;
+    VkRenderPass renderPass;
+    PipelineDetails pipeline;
 } VkState;
