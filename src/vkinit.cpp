@@ -481,18 +481,6 @@ PipelineDetails createGraphicsPipeline(VkDevice device, VkRenderPass renderPass,
     inputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     inputAssemblyInfo.primitiveRestartEnable = VK_FALSE;
 
-    VkViewport viewport{};//Transformation from image to framebuffer
-    viewport.x = 0.0f;
-    viewport.y = 0.0f;
-    viewport.width = (float)swapchainDetails->extent.width;
-    viewport.height = (float)swapchainDetails->extent.height;
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
-
-    VkRect2D scissor{};//Filter from image to framebuffer
-    scissor.offset = {0, 0};
-    scissor.extent = swapchainDetails->extent;
-
     VkDynamicState dynamicStates[2] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
     VkPipelineDynamicStateCreateInfo dynamicStateInfo{};
     dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
