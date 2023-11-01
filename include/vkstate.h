@@ -48,6 +48,12 @@ typedef struct CommandBufferDetails{
     VkCommandBuffer handle;
 } CommandBufferDetails;
 
+typedef struct Synchronisers{
+    VkSemaphore imageAvailable;
+    VkSemaphore renderFinished;
+    VkFence inFlight;
+} Synchronisers;
+
 typedef struct VkState{
     VkInstance instance;
     VkSurfaceKHR surface;
@@ -60,4 +66,5 @@ typedef struct VkState{
     PipelineDetails pipeline;
     Framebuffers framebuffers;
     CommandBufferDetails commandBuffers;
+    Synchronisers synchronisers;
 } VkState;

@@ -637,3 +637,21 @@ CommandBufferDetails createCommandBuffer(VkDevice device, QueueFamilyIndices ind
 
     return commandBuffer;
 }
+
+Synchronisers createSynchronisers(VkDevice device){
+    VkSemaphoreCreateInfo semaphoreInfo{};
+    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    VkFenceCreateInfo fenceInfo{};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+
+    Synchronisers synchronisers{};
+    if (vkCreateSemaphore(device, &semaphoreInfo, NULL, &synchronisers.imageAvailable) ||
+        vkCreateSemaphore(device, &semaphoreInfo, NULL, &synchronisers.renderFinished) ||
+        vkCreateFence(device, &fenceInfo, NULL, &synchronisers.inFlight)){
+        printf("Failed to create Synchronizer members\n");
+        exit(EXIT_FAILURE);
+    }
+
+    return synchronisers;
+}

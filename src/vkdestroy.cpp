@@ -2,6 +2,10 @@
 #include <stdlib.h>
 
 void destroyVkState(VkState *vkstate){
+    vkDestroySemaphore(vkstate->logicalDevice, vkstate->synchronisers.imageAvailable, NULL);
+    vkDestroySemaphore(vkstate->logicalDevice, vkstate->synchronisers.renderFinished, NULL);
+    vkDestroyFence(vkstate->logicalDevice, vkstate->synchronisers.inFlight, NULL);
+
     vkDestroyCommandPool(vkstate->logicalDevice, vkstate->commandBuffers.pool, NULL);
 
     vkDestroyPipeline(vkstate->logicalDevice, vkstate->pipeline.handle, NULL);

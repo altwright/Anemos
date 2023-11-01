@@ -31,6 +31,7 @@ int main(int, char**){
     vkstate.pipeline = createGraphicsPipeline(vkstate.logicalDevice, vkstate.renderPass, &vkstate.swapchain);
     vkstate.framebuffers = createFramebuffers(vkstate.logicalDevice, vkstate.renderPass, &vkstate.swapchain);
     vkstate.commandBuffers = createCommandBuffer(vkstate.logicalDevice, queueFamilyIndices);
+    vkstate.synchronisers = createSynchronisers(vkstate.logicalDevice);
 
     while (!glfwWindowShouldClose(window.handle)) {
         // Check whether the user clicked on the close button (and any other

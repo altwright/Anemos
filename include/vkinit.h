@@ -13,3 +13,4 @@ VkRenderPass createRenderPass(VkDevice device, const SwapchainDetails *swapchain
 PipelineDetails createGraphicsPipeline(VkDevice device, VkRenderPass renderPass, const SwapchainDetails *swapchainDetails);
 Framebuffers createFramebuffers(VkDevice device, VkRenderPass renderPass, const SwapchainDetails *swapchainDetails);
 CommandBufferDetails createCommandBuffer(VkDevice device, QueueFamilyIndices indices);
+Synchronisers createSynchronisers(VkDevice device);

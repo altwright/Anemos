@@ -59,3 +59,7 @@ void recordDrawCommand(
         exit(EXIT_FAILURE);
     }
 }
+
+void drawFrame(){
+
+}
