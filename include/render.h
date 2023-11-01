@@ -16,7 +16,7 @@ void submitDrawCommand(
     VkSemaphore signalSemaphore,
     VkFence hostFence);
 
-void presentSwapchain(
+VkResult presentSwapchain(
     VkQueue presentQueue, 
     VkSemaphore waitSemaphore,
     VkSwapchainKHR swapchain,

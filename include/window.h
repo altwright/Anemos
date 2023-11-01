@@ -3,8 +3,9 @@
 
 typedef struct Window{
     GLFWwindow *handle;
-    size_t width;
-    size_t height;
+    int width;
+    int height;
+    bool resized;
 } Window;
 
 bool createWindow(size_t width, size_t height, const char *title, Window *window);

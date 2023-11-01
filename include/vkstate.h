@@ -7,6 +7,8 @@ extern const char* VALIDATION_LAYERS[VALIDATION_LAYERS_COUNT];
 #define DEVICE_EXTENSIONS_COUNT 1
 extern const char* DEVICE_EXTENSIONS[DEVICE_EXTENSIONS_COUNT];
 
+#define MAX_FRAMES_IN_FLIGHT 2
+
 /**
  * @brief Must call destroySwapchainSupportDetails() after
  */
@@ -43,16 +45,16 @@ typedef struct Framebuffers{
     VkFramebuffer *handles;//free
 } Framebuffers;
 
-typedef struct CommandBufferDetails{
-    VkCommandPool pool;
-    VkCommandBuffer handle;
-} CommandBufferDetails;
-
 typedef struct Synchronisers{
     VkSemaphore imageAvailable;
     VkSemaphore renderFinished;
     VkFence inFlight;
 } Synchronisers;
+
+typedef struct FrameState{
+    VkCommandBuffer commandBuffer;
+    Synchronisers synchronisers;
+} FrameState;
 
 typedef struct VkState{
     VkInstance instance;
@@ -65,6 +67,6 @@ typedef struct VkState{
     VkRenderPass renderPass;
     PipelineDetails pipeline;
     Framebuffers framebuffers;
-    CommandBufferDetails commandBuffers;
-    Synchronisers synchronisers;
+    VkCommandPool commandPool;
+    FrameState *frameStates;//free
 } VkState;

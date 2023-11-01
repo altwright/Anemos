@@ -9,6 +9,7 @@
 #include "vkstate.h"
 #include "vkdestroy.h"
 #include "load.h"
+#include "window.h"
 
 VkInstance createInstance(const char *appName, uint32_t appVersion, const char *engineName, uint32_t engineVersion){
     VkApplicationInfo appInfo{
@@ -134,6 +135,7 @@ VkPhysicalDevice selectPhysicalDevice(VkInstance instance, VkSurfaceKHR surface)
     VkPhysicalDevice selectedDevice = VK_NULL_HANDLE;
     for (size_t i = 0; i < deviceCount; i++){
         QueueFamilyIndices indices = findQueueFamilyIndices(physicalDevices[i], surface);
+        bool suitableFound = false;
         if (indices.graphicsQueue < indices.queueFamilyCount &&
             indices.presentQueue < indices.queueFamilyCount &&
             checkPhysicalDeviceExtensionSupport(physicalDevices[i])
@@ -141,11 +143,13 @@ VkPhysicalDevice selectPhysicalDevice(VkInstance instance, VkSurfaceKHR surface)
             SwapchainSupportDetails swapchainSupport = querySwapchainSupport(physicalDevices[i], surface);
             if (swapchainSupport.formatsCount > 0 && swapchainSupport.presentModesCount > 0){
                 selectedDevice = physicalDevices[i];
-                destroySwapchainSupportDetails(&swapchainSupport);
-                break;
+                suitableFound = true;
             }
             destroySwapchainSupportDetails(&swapchainSupport);
         }
+
+        if (suitableFound)
+            break;
     }
 
     free(physicalDevices);
@@ -428,7 +432,7 @@ VkRenderPass createRenderPass(VkDevice device, const SwapchainDetails *swapchain
     dependency.dstSubpass = 0;//Index to the only subpass. Must be higher than srcSubpass
     dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     dependency.srcAccessMask = 0;
-    //The next two fields specify the operations to wait on and the stages in which 
+    //The above two fields specify the operations to wait on and the stages in which 
     //these operations occur. We need to wait for the swap chain to finish reading 
     //from the image before we can access it. This can be accomplished by waiting on 
     //the color attachment output stage itself.
@@ -630,25 +634,30 @@ Framebuffers createFramebuffers(VkDevice device, VkRenderPass renderPass, const 
     return framebuffers;
 }
 
-CommandBufferDetails createCommandBuffer(VkDevice device, QueueFamilyIndices indices){
+VkCommandPool createCommandPool(VkDevice device, uint32_t queueIndex){
     VkCommandPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    poolInfo.queueFamilyIndex = indices.graphicsQueue;
+    poolInfo.queueFamilyIndex = queueIndex;
 
-    CommandBufferDetails commandBuffer{};
-    if (vkCreateCommandPool(device, &poolInfo, NULL, &commandBuffer.pool)){
+    VkCommandPool pool;
+    if (vkCreateCommandPool(device, &poolInfo, NULL, &pool)){
         printf("Failed to create Command Pool\n");
         exit(EXIT_FAILURE);
     }
 
+    return pool;
+}
+
+VkCommandBuffer createCommandBuffer(VkDevice device, VkCommandPool commandPool){
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.commandPool = commandBuffer.pool;
+    allocInfo.commandPool = commandPool;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     allocInfo.commandBufferCount = 1;
 
-    if (vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer.handle)){
+    VkCommandBuffer commandBuffer;
+    if (vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer)){
         printf("Failed to create Command Buffer\n");
         exit(EXIT_FAILURE);
     }
@@ -673,4 +682,37 @@ Synchronisers createSynchronisers(VkDevice device){
     }
 
     return synchronisers;
+}
+
+FrameState* createFrameStates(VkDevice device, VkCommandPool commandPool, size_t numFrames){
+    FrameState *frameStates = (FrameState*)malloc(sizeof(FrameState)*numFrames);
+    if (!frameStates){
+        printf("Failed to allocated FrameStates\n");
+        exit(EXIT_FAILURE);
+    }
+
+    for(size_t i = 0; i < numFrames; i++){
+        frameStates[i].commandBuffer = createCommandBuffer(device, commandPool);
+        frameStates[i].synchronisers = createSynchronisers(device);
+    }
+
+    return frameStates;
+}
+
+void recreateSwapchain(
+    VkDevice device,
+    VkPhysicalDevice physicalDevice,
+    VkSurfaceKHR surface,
+    VkRenderPass renderPass,
+    GLFWwindow *window,
+    SwapchainDetails *swapchainDetails,
+    Framebuffers *framebuffers)
+{
+    vkDeviceWaitIdle(device);
+
+    destroySwapchainDetails(device, swapchainDetails);
+    *swapchainDetails = createSwapchain(device, physicalDevice, surface, window);
+
+    destroyFramebuffers(device, framebuffers);
+    *framebuffers = createFramebuffers(device, renderPass, swapchainDetails);
 }

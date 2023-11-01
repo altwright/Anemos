@@ -12,5 +12,15 @@ SwapchainDetails createSwapchain(VkDevice device, VkPhysicalDevice physicalDevic
 VkRenderPass createRenderPass(VkDevice device, const SwapchainDetails *swapchainDetails);
 PipelineDetails createGraphicsPipeline(VkDevice device, VkRenderPass renderPass, const SwapchainDetails *swapchainDetails);
 Framebuffers createFramebuffers(VkDevice device, VkRenderPass renderPass, const SwapchainDetails *swapchainDetails);
-CommandBufferDetails createCommandBuffer(VkDevice device, QueueFamilyIndices indices);
+VkCommandPool createCommandPool(VkDevice device, uint32_t queueIndex);
+VkCommandBuffer createCommandBuffer(VkDevice device, VkCommandPool commandPool);
 Synchronisers createSynchronisers(VkDevice device);
+FrameState* createFrameStates(VkDevice device, VkCommandPool commandPool, size_t numFrames);
+void recreateSwapchain(
+    VkDevice device,
+    VkPhysicalDevice physicalDevice,
+    VkSurfaceKHR surface,
+    VkRenderPass renderPass,
+    GLFWwindow *window,
+    SwapchainDetails *swapchainDetails,
+    Framebuffers *framebuffers);

@@ -1,28 +1,38 @@
 #include "vkdestroy.h"
 #include <stdlib.h>
 
-void destroyVkState(VkState *vkstate){
-    vkDestroySemaphore(vkstate->logicalDevice, vkstate->synchronisers.imageAvailable, NULL);
-    vkDestroySemaphore(vkstate->logicalDevice, vkstate->synchronisers.renderFinished, NULL);
-    vkDestroyFence(vkstate->logicalDevice, vkstate->synchronisers.inFlight, NULL);
+void destroySwapchainDetails(VkDevice device, SwapchainDetails *swapchainDetails){
+    for (size_t i = 0; i < swapchainDetails->imagesCount; i++)
+        vkDestroyImageView(device, swapchainDetails->imageViews[i], NULL);
+    free(swapchainDetails->imageViews);
+    free(swapchainDetails->images);
+    vkDestroySwapchainKHR(device, swapchainDetails->handle, NULL);
+}
 
-    vkDestroyCommandPool(vkstate->logicalDevice, vkstate->commandBuffers.pool, NULL);
+void destroyFramebuffers(VkDevice device, Framebuffers *framebuffers){
+    for(size_t i = 0; i < framebuffers->count; i++)
+        vkDestroyFramebuffer(device, framebuffers->handles[i], NULL);
+    free(framebuffers->handles);
+}
+
+void destroyVkState(VkState *vkstate){
+    for(size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
+        vkDestroySemaphore(vkstate->logicalDevice, vkstate->frameStates[i].synchronisers.imageAvailable, NULL);
+        vkDestroySemaphore(vkstate->logicalDevice, vkstate->frameStates[i].synchronisers.renderFinished, NULL);
+        vkDestroyFence(vkstate->logicalDevice, vkstate->frameStates[i].synchronisers.inFlight, NULL);
+    }
+    free(vkstate->frameStates);
+
+    vkDestroyCommandPool(vkstate->logicalDevice, vkstate->commandPool, NULL);
 
     vkDestroyPipeline(vkstate->logicalDevice, vkstate->pipeline.handle, NULL);
     vkDestroyPipelineLayout(vkstate->logicalDevice, vkstate->pipeline.layout, NULL);
 
-    for(size_t i = 0; i <vkstate->framebuffers.count; i++)
-        vkDestroyFramebuffer(vkstate->logicalDevice, vkstate->framebuffers.handles[i], NULL);
-    free(vkstate->framebuffers.handles);
-
+    destroyFramebuffers(vkstate->logicalDevice, &vkstate->framebuffers);
+    
     vkDestroyRenderPass(vkstate->logicalDevice, vkstate->renderPass, NULL);
 
-    for (size_t i = 0; i < vkstate->swapchain.imagesCount; i++)
-        vkDestroyImageView(vkstate->logicalDevice, vkstate->swapchain.imageViews[i], NULL);
-    free(vkstate->swapchain.imageViews);
-    free(vkstate->swapchain.images);
-
-    vkDestroySwapchainKHR(vkstate->logicalDevice, vkstate->swapchain.handle, NULL);
+    destroySwapchainDetails(vkstate->logicalDevice, &vkstate->swapchain);
 
     vkDestroyDevice(vkstate->logicalDevice, NULL);
 

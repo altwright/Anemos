@@ -86,7 +86,7 @@ void submitDrawCommand(
     }
 }
 
-void presentSwapchain(
+VkResult presentSwapchain(
     VkQueue presentQueue, 
     VkSemaphore waitSemaphore,
     VkSwapchainKHR swapchain,
@@ -100,6 +100,5 @@ void presentSwapchain(
     presentInfo.pSwapchains = &swapchain;
     presentInfo.pImageIndices = &swapchainImageIndex;
 
-    if (vkQueuePresentKHR(presentQueue, &presentInfo))
-        printf("Failed to Present Swapchain image %d\n", swapchainImageIndex);
+    return vkQueuePresentKHR(presentQueue, &presentInfo);
 }

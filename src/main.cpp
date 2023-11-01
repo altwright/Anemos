@@ -31,19 +31,38 @@ int main(int, char**){
     vkstate.renderPass = createRenderPass(vkstate.logicalDevice, &vkstate.swapchain);
     vkstate.pipeline = createGraphicsPipeline(vkstate.logicalDevice, vkstate.renderPass, &vkstate.swapchain);
     vkstate.framebuffers = createFramebuffers(vkstate.logicalDevice, vkstate.renderPass, &vkstate.swapchain);
-    vkstate.commandBuffers = createCommandBuffer(vkstate.logicalDevice, queueFamilyIndices);
-    vkstate.synchronisers = createSynchronisers(vkstate.logicalDevice);
+    vkstate.commandPool = createCommandPool(vkstate.logicalDevice, queueFamilyIndices.graphicsQueue);
+    vkstate.frameStates = createFrameStates(vkstate.logicalDevice, vkstate.commandPool, MAX_FRAMES_IN_FLIGHT);
 
+    uint32_t currentFrame = 0;
     while (!glfwWindowShouldClose(window.handle)) {
-        vkWaitForFences(vkstate.logicalDevice, 1, &vkstate.synchronisers.inFlight, VK_TRUE, UINT64_MAX);
-        vkResetFences(vkstate.logicalDevice, 1, &vkstate.synchronisers.inFlight);
+        vkWaitForFences(vkstate.logicalDevice, 1, &vkstate.frameStates[currentFrame].synchronisers.inFlight, VK_TRUE, UINT64_MAX);
 
         uint32_t imageIndex;//Will refer to a VkImage in our swapchain images array
-        vkAcquireNextImageKHR(vkstate.logicalDevice, vkstate.swapchain.handle, UINT64_MAX, vkstate.synchronisers.imageAvailable, VK_NULL_HANDLE, &imageIndex);
+        VkResult result = vkAcquireNextImageKHR(vkstate.logicalDevice, vkstate.swapchain.handle, UINT64_MAX, vkstate.frameStates[currentFrame].synchronisers.imageAvailable, VK_NULL_HANDLE, &imageIndex);
 
-        vkResetCommandBuffer(vkstate.commandBuffers.handle, 0);
+        if (result == VK_ERROR_OUT_OF_DATE_KHR){
+            recreateSwapchain(
+                vkstate.logicalDevice, 
+                vkstate.physicalDevice, 
+                vkstate.surface, 
+                vkstate.renderPass, 
+                window.handle,
+                &vkstate.swapchain,
+                &vkstate.framebuffers
+            );
+            continue;
+        }
+        else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR){
+            printf("Failed to Acquire Next Swapchain Image: %d\n", result);
+            exit(EXIT_FAILURE);
+        }
+
+        vkResetFences(vkstate.logicalDevice, 1, &vkstate.frameStates[currentFrame].synchronisers.inFlight);
+
+        vkResetCommandBuffer(vkstate.frameStates[currentFrame].commandBuffer, 0);
         recordDrawCommand(
-            vkstate.commandBuffers.handle,
+            vkstate.frameStates[currentFrame].commandBuffer,
             vkstate.renderPass,
             vkstate.framebuffers.handles[imageIndex],
             vkstate.pipeline.handle,
@@ -51,17 +70,37 @@ int main(int, char**){
         );
         submitDrawCommand(
             vkstate.graphicsQueue,
-            vkstate.commandBuffers.handle,
-            vkstate.synchronisers.imageAvailable,
-            vkstate.synchronisers.renderFinished,
-            vkstate.synchronisers.inFlight
+            vkstate.frameStates[currentFrame].commandBuffer,
+            vkstate.frameStates[currentFrame].synchronisers.imageAvailable,
+            vkstate.frameStates[currentFrame].synchronisers.renderFinished,
+            vkstate.frameStates[currentFrame].synchronisers.inFlight
         );
-        presentSwapchain(
+        result = presentSwapchain(
             vkstate.presentQueue,
-            vkstate.synchronisers.renderFinished,
+            vkstate.frameStates[currentFrame].synchronisers.renderFinished,
             vkstate.swapchain.handle,
             imageIndex
         );
+
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || window.resized){
+            recreateSwapchain(
+                vkstate.logicalDevice,
+                vkstate.physicalDevice,
+                vkstate.surface,
+                vkstate.renderPass,
+                window.handle,
+                &vkstate.swapchain,
+                &vkstate.framebuffers
+            );
+
+            window.resized = false;
+        }
+        else if (result != VK_SUCCESS){
+            printf("Failed to Present Swapchain Image\n");
+            exit(EXIT_FAILURE);
+        }
+            
+        currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
         // Check whether the user clicked on the close button (and any other
         // mouse/key event, which we don't use so far)
         glfwPollEvents();
