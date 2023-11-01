@@ -7,6 +7,7 @@
 #include "vkstate.h"
 #include "vkinit.h"
 #include "vkdestroy.h"
+#include "render.h"
 
 #define WIDTH 640
 #define HEIGHT 480
@@ -34,6 +35,33 @@ int main(int, char**){
     vkstate.synchronisers = createSynchronisers(vkstate.logicalDevice);
 
     while (!glfwWindowShouldClose(window.handle)) {
+        vkWaitForFences(vkstate.logicalDevice, 1, &vkstate.synchronisers.inFlight, VK_TRUE, UINT64_MAX);
+        vkResetFences(vkstate.logicalDevice, 1, &vkstate.synchronisers.inFlight);
+
+        uint32_t imageIndex;//Will refer to a VkImage in our swapchain images array
+        vkAcquireNextImageKHR(vkstate.logicalDevice, vkstate.swapchain.handle, UINT64_MAX, vkstate.synchronisers.imageAvailable, VK_NULL_HANDLE, &imageIndex);
+
+        vkResetCommandBuffer(vkstate.commandBuffers.handle, 0);
+        recordDrawCommand(
+            vkstate.commandBuffers.handle,
+            vkstate.renderPass,
+            vkstate.framebuffers.handles[imageIndex],
+            vkstate.pipeline.handle,
+            &vkstate.swapchain
+        );
+        submitDrawCommand(
+            vkstate.graphicsQueue,
+            vkstate.commandBuffers.handle,
+            vkstate.synchronisers.imageAvailable,
+            vkstate.synchronisers.renderFinished,
+            vkstate.synchronisers.inFlight
+        );
+        presentSwapchain(
+            vkstate.presentQueue,
+            vkstate.synchronisers.renderFinished,
+            vkstate.swapchain.handle,
+            imageIndex
+        );
         // Check whether the user clicked on the close button (and any other
         // mouse/key event, which we don't use so far)
         glfwPollEvents();

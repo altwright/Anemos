@@ -60,6 +60,46 @@ void recordDrawCommand(
     }
 }
 
-void drawFrame(){
+void submitDrawCommand(
+    VkQueue graphicsQueue, 
+    VkCommandBuffer commandBuffer, 
+    VkSemaphore waitSemaphore,
+    VkSemaphore signalSemaphore,
+    VkFence hostFence){
 
+    VkSubmitInfo sumbitInfo{};
+    sumbitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    sumbitInfo.waitSemaphoreCount = 1;
+    sumbitInfo.pWaitSemaphores = &waitSemaphore;
+    VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    sumbitInfo.pWaitDstStageMask = waitStages;
+    sumbitInfo.commandBufferCount = 1;
+    sumbitInfo.pCommandBuffers = &commandBuffer;
+    sumbitInfo.signalSemaphoreCount = 1;
+    sumbitInfo.pSignalSemaphores = &signalSemaphore;//Signalled once the command buffers have finished executing
+
+    //hostFence signals to the host that it is safe to reset the command buffer,
+    //which is an optional feature.
+    if (vkQueueSubmit(graphicsQueue, 1, &sumbitInfo, hostFence)){
+        printf("Submission of Command Buffer failed\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void presentSwapchain(
+    VkQueue presentQueue, 
+    VkSemaphore waitSemaphore,
+    VkSwapchainKHR swapchain,
+    uint32_t swapchainImageIndex){
+
+    VkPresentInfoKHR presentInfo{};
+    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    presentInfo.waitSemaphoreCount = 1;
+    presentInfo.pWaitSemaphores = &waitSemaphore;
+    presentInfo.swapchainCount = 1;
+    presentInfo.pSwapchains = &swapchain;
+    presentInfo.pImageIndices = &swapchainImageIndex;
+
+    if (vkQueuePresentKHR(presentQueue, &presentInfo))
+        printf("Failed to Present Swapchain image %d\n", swapchainImageIndex);
 }

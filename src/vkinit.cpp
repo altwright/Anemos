@@ -423,12 +423,30 @@ VkRenderPass createRenderPass(VkDevice device, const SwapchainDetails *swapchain
     //referenced from the fragment shader with the 
     //layout(location = 0) out vec4 outColor directive!
 
+    VkSubpassDependency dependency{};
+    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependency.dstSubpass = 0;//Index to the only subpass. Must be higher than srcSubpass
+    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.srcAccessMask = 0;
+    //The next two fields specify the operations to wait on and the stages in which 
+    //these operations occur. We need to wait for the swap chain to finish reading 
+    //from the image before we can access it. This can be accomplished by waiting on 
+    //the color attachment output stage itself.
+    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    //The operations that should wait on this are in the color attachment stage 
+    //and involve the writing of the color attachment. These settings will prevent 
+    //the transition from happening until it’s actually necessary (and allowed): 
+    //when we want to start writing colors to it.
+    
     VkRenderPassCreateInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
     renderPassInfo.attachmentCount = 1;
     renderPassInfo.pAttachments = &colourAttachmentDesc;
     renderPassInfo.subpassCount = 1;
     renderPassInfo.pSubpasses = &subpassDesc;
+    renderPassInfo.dependencyCount = 1;
+    renderPassInfo.pDependencies = &dependency;
 
     VkRenderPass renderPass;
     if (vkCreateRenderPass(device, &renderPassInfo, NULL, &renderPass)){
@@ -644,6 +662,7 @@ Synchronisers createSynchronisers(VkDevice device){
 
     VkFenceCreateInfo fenceInfo{};
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;//Starts in the signalled state
 
     Synchronisers synchronisers{};
     if (vkCreateSemaphore(device, &semaphoreInfo, NULL, &synchronisers.imageAvailable) ||
