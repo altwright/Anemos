@@ -67,6 +67,8 @@ int main(int, char**){
         glfwPollEvents();
     }
 
+    vkDeviceWaitIdle(vkstate.logicalDevice);
+
     destroyWindow(&window);
     destroyVkState(&vkstate);
 
