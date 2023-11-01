@@ -3,13 +3,6 @@
 #include <stdio.h>
 
 bool createWindow(size_t width, size_t height, const char *title, Window *window){
-    /*
-    if (glfwPlatformSupported(GLFW_PLATFORM_WAYLAND)){
-        printf("GLFW: Wayland supported\n");
-        glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_WAYLAND);
-    }
-    */
-
     if (!glfwInit()) {
         printf("Could not initialise GLFW!\n");
         return false;
