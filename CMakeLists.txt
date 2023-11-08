@@ -18,12 +18,14 @@ target_include_directories(anemos PRIVATE
 
 add_subdirectory(src)
 add_subdirectory(libs/glfw)
+add_subdirectory(libs/cglm)
 
 find_package(Vulkan REQUIRED)
 
 target_link_libraries(anemos PRIVATE
     glfw
     Vulkan::Vulkan
+    cglm
 )
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
