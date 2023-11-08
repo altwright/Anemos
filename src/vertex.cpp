@@ -5,9 +5,14 @@
 #include "vkstate.h"
 
 const Vertex vertices[VERTEX_COUNT] = {
-    {{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
-    {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-    {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+    {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+    {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+    {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+    {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+};
+
+const u16 indices[INDEX_COUNT] = {
+    0, 1, 2, 2, 3, 0
 };
 
 VkVertexInputBindingDescription getVertexBindingDescription(){
@@ -44,12 +49,22 @@ VertexInputAttributes getVertexInputAttributes(){
     return attributes;
 }
 
-void copyVerticesToCoherentBuffer(VkDevice device, Buffer vertexBuffer, VkDeviceSize offset, const Vertex *vertices, size_t verticesCount)
+void copyVerticesToStagingBuffer(VkDevice device, Buffer vertexStagingBuffer, VkDeviceSize offset, const Vertex *vertices, size_t verticesCount)
 {
-    assert((sizeof(Vertex)*verticesCount) <= (vertexBuffer.size - offset));
+    assert((sizeof(Vertex)*verticesCount) <= (vertexStagingBuffer.size - offset));
 
     void *data = NULL;
-    vkMapMemory(device, vertexBuffer.memory, offset, vertexBuffer.size, 0, &data);
+    vkMapMemory(device, vertexStagingBuffer.memory, offset, vertexStagingBuffer.size, 0, &data);
     memcpy(data, vertices, sizeof(Vertex)*verticesCount);
-    vkUnmapMemory(device, vertexBuffer.memory);
+    vkUnmapMemory(device, vertexStagingBuffer.memory);
+}
+
+void copyIndicesToStagingBuffer(VkDevice device, Buffer indexStagingBuffer, VkDeviceSize offset, const u16 *indices, size_t indicesCount)
+{
+    assert((sizeof(indices[0])*indicesCount) <= (indexStagingBuffer.size - offset));
+
+    void *data = NULL;
+    vkMapMemory(device, indexStagingBuffer.memory, offset, indexStagingBuffer.size, 0, &data);
+    memcpy(data, indices, sizeof(indices[0])*indicesCount);
+    vkUnmapMemory(device, indexStagingBuffer.memory);
 }

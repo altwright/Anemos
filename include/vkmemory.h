@@ -18,3 +18,14 @@ void copyBufferRegion(
     Buffer srcBuffer, 
     Buffer dstBuffer, 
     VkBufferCopy copyRegion);
+Buffer createStagingBuffer(VkDevice device, PhysicalDeviceDetails *physicalDeviceDetails, VkDeviceSize bufferSize);
+void copyDataToLocalBuffer(
+    VkDevice device,
+    const PhysicalDeviceDetails *physicalDevice,
+    VkCommandPool transferCommandPool,
+    VkQueue transferQueue,
+    Buffer dstBuffer,
+    VkDeviceSize dstBufferOffset,
+    const void *dataArray,
+    size_t dataCount,
+    size_t datatypeSize);

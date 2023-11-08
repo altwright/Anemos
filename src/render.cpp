@@ -13,7 +13,10 @@ void recordDrawCommand(
     const SwapchainDetails *swapchainDetails,
     Buffer vertexBuffer,
     VkDeviceSize vertexBufferOffset,
-    u32 vertexCount)
+    u32 vertexCount,
+    Buffer indexBuffer,
+    VkDeviceSize indexBufferOffset,
+    u32 indexCount)
 {
 
     VkCommandBufferBeginInfo beginInfo{};
@@ -43,6 +46,8 @@ void recordDrawCommand(
 
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer.handle, &vertexBufferOffset);
 
+    vkCmdBindIndexBuffer(commandBuffer, indexBuffer.handle, indexBufferOffset, VK_INDEX_TYPE_UINT16);
+
     VkViewport viewport{};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
@@ -57,7 +62,7 @@ void recordDrawCommand(
     scissor.extent = swapchainDetails->extent;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    vkCmdDraw(commandBuffer, vertexCount, 1, 0, 0);
+    vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
 
     vkCmdEndRenderPass(commandBuffer);
 

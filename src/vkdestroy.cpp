@@ -37,6 +37,8 @@ void destroyVkState(VkState *vkstate){
 
     vkDestroyBuffer(vkstate->logicalDevice, vkstate->vertexBuffer.handle, NULL);
     vkFreeMemory(vkstate->logicalDevice, vkstate->vertexBuffer.memory, NULL);
+    vkDestroyBuffer(vkstate->logicalDevice, vkstate->indexBuffer.handle, NULL);
+    vkFreeMemory(vkstate->logicalDevice, vkstate->indexBuffer.memory, NULL);
 
     vkDestroyDevice(vkstate->logicalDevice, NULL);
 

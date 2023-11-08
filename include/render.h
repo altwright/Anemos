@@ -11,7 +11,10 @@ void recordDrawCommand(
     const SwapchainDetails *swapchainDetails,
     Buffer vertexBuffer,
     VkDeviceSize vertexBufferOffset,
-    u32 vertexCount);
+    u32 vertexCount,
+    Buffer indexBuffer,
+    VkDeviceSize indexBufferOffset,
+    u32 indexCount);
 
 void submitDrawCommand(
     VkQueue queue, 

@@ -23,28 +23,29 @@ int main(int, char**){
 
     VkState vkstate = initVkState(&window);
 
-    Buffer vertexStagingBuffer = createBuffer(
-        vkstate.logicalDevice, 
-        &vkstate.physicalDevice, 
-        sizeof(Vertex)*VERTEX_COUNT,
-        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    copyVerticesToCoherentBuffer(vkstate.logicalDevice, vertexStagingBuffer, 0, vertices, VERTEX_COUNT);
-    VkBufferCopy vertexRegion = {
-        .srcOffset = 0,
-        .dstOffset = 0,
-        .size = sizeof(Vertex)*VERTEX_COUNT
-    };
-    copyBufferRegion(
-        vkstate.logicalDevice, 
-        vkstate.graphicsCommandPool, 
-        vkstate.graphicsQueue, 
-        vertexStagingBuffer, 
-        vkstate.vertexBuffer, 
-        vertexRegion
+    copyDataToLocalBuffer(
+        vkstate.logicalDevice,
+        &vkstate.physicalDevice,
+        vkstate.transferCommandPool,
+        vkstate.graphicsQueue,
+        vkstate.vertexBuffer,
+        0,
+        vertices,
+        VERTEX_COUNT,
+        sizeof(vertices[0])
     );
-    vkDestroyBuffer(vkstate.logicalDevice, vertexStagingBuffer.handle, NULL);
-    vkFreeMemory(vkstate.logicalDevice, vertexStagingBuffer.memory, NULL);
+
+    copyDataToLocalBuffer(
+        vkstate.logicalDevice,
+        &vkstate.physicalDevice,
+        vkstate.transferCommandPool,
+        vkstate.graphicsQueue,
+        vkstate.indexBuffer,
+        0,
+        indices,
+        INDEX_COUNT,
+        sizeof(indices[0])
+    );
 
     uint32_t currentFrame = 0;
     while (!glfwWindowShouldClose(window.handle)) {
@@ -82,7 +83,10 @@ int main(int, char**){
             &vkstate.swapchain,
             vkstate.vertexBuffer,
             0,
-            VERTEX_COUNT
+            VERTEX_COUNT,
+            vkstate.indexBuffer,
+            0,
+            INDEX_COUNT
         );
 
         submitDrawCommand(

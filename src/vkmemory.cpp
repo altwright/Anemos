@@ -1,6 +1,8 @@
 #include "vkmemory.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
+#include <string.h>
 
 u32 findVkMemoryType(u32 typeFilter, const VkPhysicalDeviceMemoryProperties *memProperties, VkMemoryPropertyFlags desiredPropertyFlags)
 {
@@ -108,4 +110,51 @@ void copyBufferRegion(
     }
 
     vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
+}
+
+Buffer createStagingBuffer(VkDevice device, const PhysicalDeviceDetails *physicalDeviceDetails, VkDeviceSize bufferSize){
+    return createBuffer(
+        device,
+        physicalDeviceDetails,
+        bufferSize,
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+    );
+}
+
+void copyDataToLocalBuffer(
+    VkDevice device,
+    const PhysicalDeviceDetails *physicalDevice,
+    VkCommandPool transferCommandPool,
+    VkQueue transferQueue,
+    Buffer dstBuffer,
+    VkDeviceSize dstBufferOffset,
+    const void *dataArray,
+    size_t dataCount,
+    size_t datatypeSize)
+{
+    Buffer stagingBuffer = createStagingBuffer(device, physicalDevice, datatypeSize*dataCount);
+
+    void *mappedStagingBuffer = NULL;
+    vkMapMemory(device, stagingBuffer.memory, 0, stagingBuffer.size, 0, &mappedStagingBuffer);
+    memcpy(mappedStagingBuffer, dataArray, datatypeSize*dataCount);
+    vkUnmapMemory(device, stagingBuffer.memory);
+
+    VkBufferCopy bufferCopyRegion = {
+        .srcOffset = 0,
+        .dstOffset = dstBufferOffset,
+        .size = datatypeSize*dataCount
+    };
+
+    copyBufferRegion(
+        device,
+        transferCommandPool, 
+        transferQueue,
+        stagingBuffer, 
+        dstBuffer,
+        bufferCopyRegion
+    );
+
+    vkDestroyBuffer(device, stagingBuffer.handle, NULL);
+    vkFreeMemory(device, stagingBuffer.memory, NULL);
 }

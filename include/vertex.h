@@ -14,9 +14,12 @@ typedef struct VertexInputAttributes{
     VkVertexInputAttributeDescription *descriptions;//free
 } VertexInputAttributes;
 
-#define VERTEX_COUNT 3
+#define VERTEX_COUNT 4
 extern const Vertex vertices[VERTEX_COUNT];
+#define INDEX_COUNT 6
+extern const u16 indices[INDEX_COUNT];
 
 VkVertexInputBindingDescription getVertexBindingDescription();
 VertexInputAttributes getVertexInputAttributes();
-void copyVerticesToCoherentBuffer(VkDevice device, Buffer vertexBuffer, VkDeviceSize offset, const Vertex *vertices, size_t verticesCount);
+void copyVerticesToStagingBuffer(VkDevice device, Buffer vertexBuffer, VkDeviceSize offset, const Vertex *vertices, size_t verticesCount);
+void copyIndicesToStagingBuffer(VkDevice device, Buffer indexBuffer, VkDeviceSize offset, const u16 *indices, size_t indicesCount);

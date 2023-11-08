@@ -756,7 +756,15 @@ VkState initVkState(const Window *window){
         &vkstate.physicalDevice,
         sizeof(Vertex)*VERTEX_COUNT,
         VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+    );
+    vkstate.indexBuffer = createBuffer(
+        vkstate.logicalDevice,
+        &vkstate.physicalDevice, 
+        sizeof(indices[0])*INDEX_COUNT,
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+    );
     vkstate.graphicsCommandPool = createCommandPool(vkstate.logicalDevice, queueFamilyIndices.graphicsQueue, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
     vkstate.transferCommandPool = createCommandPool(vkstate.logicalDevice, queueFamilyIndices.graphicsQueue, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
     vkstate.frameStates = createFrameStates(vkstate.logicalDevice, vkstate.graphicsCommandPool, MAX_FRAMES_IN_FLIGHT);
