@@ -9,6 +9,7 @@
 #include "vkdestroy.h"
 #include "render.h"
 #include "vertex.h"
+#include "vkmemory.h"
 
 #define WIDTH 640
 #define HEIGHT 480
@@ -22,7 +23,28 @@ int main(int, char**){
 
     VkState vkstate = initVkState(&window);
 
-    copyVerticesToCoherentBuffer(vkstate.logicalDevice, vkstate.vertexBuffer, 0, vertices, VERTEX_COUNT);
+    Buffer vertexStagingBuffer = createBuffer(
+        vkstate.logicalDevice, 
+        &vkstate.physicalDevice, 
+        sizeof(Vertex)*VERTEX_COUNT,
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    copyVerticesToCoherentBuffer(vkstate.logicalDevice, vertexStagingBuffer, 0, vertices, VERTEX_COUNT);
+    VkBufferCopy vertexRegion = {
+        .srcOffset = 0,
+        .dstOffset = 0,
+        .size = sizeof(Vertex)*VERTEX_COUNT
+    };
+    copyBufferRegion(
+        vkstate.logicalDevice, 
+        vkstate.graphicsCommandPool, 
+        vkstate.graphicsQueue, 
+        vertexStagingBuffer, 
+        vkstate.vertexBuffer, 
+        vertexRegion
+    );
+    vkDestroyBuffer(vkstate.logicalDevice, vertexStagingBuffer.handle, NULL);
+    vkFreeMemory(vkstate.logicalDevice, vertexStagingBuffer.memory, NULL);
 
     uint32_t currentFrame = 0;
     while (!glfwWindowShouldClose(window.handle)) {

@@ -23,7 +23,8 @@ void destroyVkState(VkState *vkstate){
     }
     free(vkstate->frameStates);
 
-    vkDestroyCommandPool(vkstate->logicalDevice, vkstate->commandPool, NULL);
+    vkDestroyCommandPool(vkstate->logicalDevice, vkstate->graphicsCommandPool, NULL);
+    vkDestroyCommandPool(vkstate->logicalDevice, vkstate->transferCommandPool, NULL);
 
     vkDestroyPipeline(vkstate->logicalDevice, vkstate->pipeline.handle, NULL);
     vkDestroyPipelineLayout(vkstate->logicalDevice, vkstate->pipeline.layout, NULL);

@@ -648,10 +648,10 @@ Framebuffers createFramebuffers(VkDevice device, VkRenderPass renderPass, const 
     return framebuffers;
 }
 
-VkCommandPool createCommandPool(VkDevice device, uint32_t queueIndex){
+VkCommandPool createCommandPool(VkDevice device, uint32_t queueIndex, VkCommandPoolCreateFlags createFlags){
     VkCommandPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    poolInfo.flags = createFlags;
     poolInfo.queueFamilyIndex = queueIndex;
 
     VkCommandPool pool;
@@ -738,50 +738,6 @@ void recreateSwapchain(
     *framebuffers = createFramebuffers(device, renderPass, swapchainDetails);
 }
 
-Buffer createVertexBuffer(VkDevice device, const PhysicalDeviceDetails *physicalDevice){
-    VkBufferCreateInfo bufferInfo{};
-    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    bufferInfo.size = sizeof(Vertex)*VERTEX_COUNT;
-    bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-    Buffer vertexBuffer = {};
-    if (vkCreateBuffer(device, &bufferInfo, NULL, &vertexBuffer.handle)){
-        fprintf(stderr, "Failed to allocate Vertex Buffer\n");
-        exit(EXIT_FAILURE);
-    }
-
-    VkMemoryRequirements memRequirements = {};
-    vkGetBufferMemoryRequirements(device, vertexBuffer.handle, &memRequirements);
-
-    VkMemoryAllocateInfo allocInfo = {};
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = findVkMemoryType(
-        memRequirements.memoryTypeBits, 
-        &physicalDevice->memProperties, 
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-    );
-    if (allocInfo.memoryTypeIndex == UINT32_MAX){
-        fprintf(stderr, "Failed to find suitable memory type for Vertex Buffer\n");
-        exit(EXIT_FAILURE);
-    }
-
-    if (vkAllocateMemory(device, &allocInfo, NULL, &vertexBuffer.memory)){
-        fprintf(stderr, "Failed to allocate memory for Vertex Buffer\n");
-        exit(EXIT_FAILURE);
-    }
-
-    if (vkBindBufferMemory(device, vertexBuffer.handle, vertexBuffer.memory, 0)){
-        fprintf(stderr, "Failed to bind memory to Vertex Buffer\n");
-        exit(EXIT_FAILURE);
-    }
-
-    vertexBuffer.size = bufferInfo.size;
-    vertexBuffer.physicalSize = memRequirements.size;
-    return vertexBuffer;
-}
-
 VkState initVkState(const Window *window){
     VkState vkstate{};
     vkstate.instance = createInstance("Anemos", VK_MAKE_VERSION(0, 1, 0), "Moebius", VK_MAKE_VERSION(0, 1, 0));
@@ -795,9 +751,15 @@ VkState initVkState(const Window *window){
     vkstate.renderPass = createRenderPass(vkstate.logicalDevice, &vkstate.swapchain);
     vkstate.pipeline = createGraphicsPipeline(vkstate.logicalDevice, vkstate.renderPass, &vkstate.swapchain);
     vkstate.framebuffers = createFramebuffers(vkstate.logicalDevice, vkstate.renderPass, &vkstate.swapchain);
-    vkstate.vertexBuffer = createVertexBuffer(vkstate.logicalDevice, &vkstate.physicalDevice);
-    vkstate.commandPool = createCommandPool(vkstate.logicalDevice, queueFamilyIndices.graphicsQueue);
-    vkstate.frameStates = createFrameStates(vkstate.logicalDevice, vkstate.commandPool, MAX_FRAMES_IN_FLIGHT);
+    vkstate.vertexBuffer = createBuffer(
+        vkstate.logicalDevice,
+        &vkstate.physicalDevice,
+        sizeof(Vertex)*VERTEX_COUNT,
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    vkstate.graphicsCommandPool = createCommandPool(vkstate.logicalDevice, queueFamilyIndices.graphicsQueue, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+    vkstate.transferCommandPool = createCommandPool(vkstate.logicalDevice, queueFamilyIndices.graphicsQueue, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
+    vkstate.frameStates = createFrameStates(vkstate.logicalDevice, vkstate.graphicsCommandPool, MAX_FRAMES_IN_FLIGHT);
 
     return vkstate;
 }

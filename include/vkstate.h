@@ -80,6 +80,7 @@ typedef struct VkState{
     PipelineDetails pipeline;
     Framebuffers framebuffers;
     Buffer vertexBuffer;
-    VkCommandPool commandPool;
+    VkCommandPool graphicsCommandPool;
+    VkCommandPool transferCommandPool;
     FrameState *frameStates;//free
 } VkState;
