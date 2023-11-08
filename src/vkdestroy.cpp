@@ -34,6 +34,9 @@ void destroyVkState(VkState *vkstate){
 
     destroySwapchainDetails(vkstate->logicalDevice, &vkstate->swapchain);
 
+    vkDestroyBuffer(vkstate->logicalDevice, vkstate->vertexBuffer.handle, NULL);
+    vkFreeMemory(vkstate->logicalDevice, vkstate->vertexBuffer.memory, NULL);
+
     vkDestroyDevice(vkstate->logicalDevice, NULL);
 
     vkDestroySurfaceKHR(vkstate->instance, vkstate->surface, NULL);

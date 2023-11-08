@@ -8,6 +8,7 @@
 #include "vkinit.h"
 #include "vkdestroy.h"
 #include "render.h"
+#include "vertex.h"
 
 #define WIDTH 640
 #define HEIGHT 480
@@ -19,20 +20,9 @@ int main(int, char**){
         return EXIT_FAILURE;
     }
 
-    VkState vkstate{};
-    vkstate.instance = createInstance("Anemos", VK_MAKE_VERSION(0, 1, 0), "Moebius", VK_MAKE_VERSION(0, 1, 0));
-    vkstate.surface = createSurface(vkstate.instance, window.handle);
-    vkstate.physicalDevice = selectPhysicalDevice(vkstate.instance, vkstate.surface);
-    QueueFamilyIndices queueFamilyIndices = findQueueFamilyIndices(vkstate.physicalDevice, vkstate.surface);
-    vkstate.logicalDevice = createLogicalDevice(vkstate.physicalDevice, queueFamilyIndices);
-    vkGetDeviceQueue(vkstate.logicalDevice, queueFamilyIndices.graphicsQueue, 0, &vkstate.graphicsQueue);
-    vkGetDeviceQueue(vkstate.logicalDevice, queueFamilyIndices.presentQueue, 0, &vkstate.presentQueue);
-    vkstate.swapchain = createSwapchain(vkstate.logicalDevice, vkstate.physicalDevice, vkstate.surface, window.handle);
-    vkstate.renderPass = createRenderPass(vkstate.logicalDevice, &vkstate.swapchain);
-    vkstate.pipeline = createGraphicsPipeline(vkstate.logicalDevice, vkstate.renderPass, &vkstate.swapchain);
-    vkstate.framebuffers = createFramebuffers(vkstate.logicalDevice, vkstate.renderPass, &vkstate.swapchain);
-    vkstate.commandPool = createCommandPool(vkstate.logicalDevice, queueFamilyIndices.graphicsQueue);
-    vkstate.frameStates = createFrameStates(vkstate.logicalDevice, vkstate.commandPool, MAX_FRAMES_IN_FLIGHT);
+    VkState vkstate = initVkState(&window);
+
+    copyVerticesToCoherentBuffer(vkstate.logicalDevice, vkstate.vertexBuffer, 0, vertices, VERTEX_COUNT);
 
     uint32_t currentFrame = 0;
     while (!glfwWindowShouldClose(window.handle)) {
@@ -44,7 +34,7 @@ int main(int, char**){
         if (result == VK_ERROR_OUT_OF_DATE_KHR){
             recreateSwapchain(
                 vkstate.logicalDevice, 
-                vkstate.physicalDevice, 
+                vkstate.physicalDevice.handle, 
                 vkstate.surface, 
                 vkstate.renderPass, 
                 window.handle,
@@ -61,13 +51,18 @@ int main(int, char**){
         vkResetFences(vkstate.logicalDevice, 1, &vkstate.frameStates[currentFrame].synchronisers.inFlight);
 
         vkResetCommandBuffer(vkstate.frameStates[currentFrame].commandBuffer, 0);
+
         recordDrawCommand(
             vkstate.frameStates[currentFrame].commandBuffer,
             vkstate.renderPass,
             vkstate.framebuffers.handles[imageIndex],
             vkstate.pipeline.handle,
-            &vkstate.swapchain
+            &vkstate.swapchain,
+            vkstate.vertexBuffer,
+            0,
+            VERTEX_COUNT
         );
+
         submitDrawCommand(
             vkstate.graphicsQueue,
             vkstate.frameStates[currentFrame].commandBuffer,
@@ -75,6 +70,7 @@ int main(int, char**){
             vkstate.frameStates[currentFrame].synchronisers.renderFinished,
             vkstate.frameStates[currentFrame].synchronisers.inFlight
         );
+
         result = presentSwapchain(
             vkstate.presentQueue,
             vkstate.frameStates[currentFrame].synchronisers.renderFinished,
@@ -85,7 +81,7 @@ int main(int, char**){
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || window.resized){
             recreateSwapchain(
                 vkstate.logicalDevice,
-                vkstate.physicalDevice,
+                vkstate.physicalDevice.handle,
                 vkstate.surface,
                 vkstate.renderPass,
                 window.handle,

@@ -56,10 +56,22 @@ typedef struct FrameState{
     Synchronisers synchronisers;
 } FrameState;
 
+typedef struct Buffer{
+    VkBuffer handle;
+    VkDeviceSize size;
+    VkDeviceMemory memory;
+    VkDeviceSize physicalSize;
+} Buffer;
+
+typedef struct PhysicalDeviceDetails{
+    VkPhysicalDevice handle;
+    VkPhysicalDeviceMemoryProperties memProperties;
+} PhysicalDeviceDetails;
+
 typedef struct VkState{
     VkInstance instance;
     VkSurfaceKHR surface;
-    VkPhysicalDevice physicalDevice;
+    PhysicalDeviceDetails physicalDevice;
     VkDevice logicalDevice;
     VkQueue graphicsQueue;
     VkQueue presentQueue;
@@ -67,6 +79,7 @@ typedef struct VkState{
     VkRenderPass renderPass;
     PipelineDetails pipeline;
     Framebuffers framebuffers;
+    Buffer vertexBuffer;
     VkCommandPool commandPool;
     FrameState *frameStates;//free
 } VkState;

@@ -6,4 +6,6 @@ target_sources(anemos PRIVATE
     vkdestroy.cpp
     load.cpp
     render.cpp
+    vertex.cpp
+    vkmemory.cpp
 )

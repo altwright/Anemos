@@ -1,13 +1,17 @@
 #pragma once
 #include <vulkan/vulkan.h>
 #include "vkstate.h"
+#include "int.h"
 
 void recordDrawCommand(
     VkCommandBuffer commandBuffer, 
     VkRenderPass renderPass, 
     VkFramebuffer framebuffer, 
     VkPipeline graphicsPipeline,
-    const SwapchainDetails *swapchainDetails);
+    const SwapchainDetails *swapchainDetails,
+    Buffer vertexBuffer,
+    VkDeviceSize vertexBufferOffset,
+    u32 vertexCount);
 
 void submitDrawCommand(
     VkQueue queue, 

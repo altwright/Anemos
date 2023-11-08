@@ -10,6 +10,8 @@
 #include "vkdestroy.h"
 #include "load.h"
 #include "window.h"
+#include "vertex.h"
+#include "vkmemory.h"
 
 VkInstance createInstance(const char *appName, uint32_t appVersion, const char *engineName, uint32_t engineVersion){
     VkApplicationInfo appInfo{
@@ -110,7 +112,7 @@ bool checkPhysicalDeviceExtensionSupport(VkPhysicalDevice device){
         return true;
 }
 
-VkPhysicalDevice selectPhysicalDevice(VkInstance instance, VkSurfaceKHR surface){
+PhysicalDeviceDetails selectPhysicalDevice(VkInstance instance, VkSurfaceKHR surface){
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(instance, &deviceCount, NULL);
 
@@ -165,7 +167,12 @@ VkPhysicalDevice selectPhysicalDevice(VkInstance instance, VkSurfaceKHR surface)
         printf("No GPU is suitable\n");
         exit(EXIT_FAILURE);
     }
-    return selectedDevice;
+
+    PhysicalDeviceDetails physicalDeviceDetails = {};
+    physicalDeviceDetails.handle = selectedDevice;
+    vkGetPhysicalDeviceMemoryProperties(physicalDeviceDetails.handle, &physicalDeviceDetails.memProperties);
+
+    return physicalDeviceDetails;
 }
 
 QueueFamilyIndices findQueueFamilyIndices(VkPhysicalDevice device, VkSurfaceKHR surface){
@@ -495,8 +502,14 @@ PipelineDetails createGraphicsPipeline(VkDevice device, VkRenderPass renderPass,
     fragShaderStageInfo.module = fragShaderModule;
     fragShaderStageInfo.pName = "main";
 
+    VkVertexInputBindingDescription bindingDesc = getVertexBindingDescription();
+    VertexInputAttributes attributes = getVertexInputAttributes();
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    vertexInputInfo.vertexBindingDescriptionCount = 1;
+    vertexInputInfo.pVertexBindingDescriptions = &bindingDesc;
+    vertexInputInfo.vertexAttributeDescriptionCount = attributes.count;
+    vertexInputInfo.pVertexAttributeDescriptions = attributes.descriptions;
 
     VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo{};
     inputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -600,6 +613,7 @@ PipelineDetails createGraphicsPipeline(VkDevice device, VkRenderPass renderPass,
 
     free(vertShader.bytes);
     free(fragShader.bytes);
+    free(attributes.descriptions);
     vkDestroyShaderModule(device, vertShaderModule, NULL);
     vkDestroyShaderModule(device, fragShaderModule, NULL);
 
@@ -722,4 +736,68 @@ void recreateSwapchain(
 
     destroyFramebuffers(device, framebuffers);
     *framebuffers = createFramebuffers(device, renderPass, swapchainDetails);
+}
+
+Buffer createVertexBuffer(VkDevice device, const PhysicalDeviceDetails *physicalDevice){
+    VkBufferCreateInfo bufferInfo{};
+    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferInfo.size = sizeof(Vertex)*VERTEX_COUNT;
+    bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    Buffer vertexBuffer = {};
+    if (vkCreateBuffer(device, &bufferInfo, NULL, &vertexBuffer.handle)){
+        fprintf(stderr, "Failed to allocate Vertex Buffer\n");
+        exit(EXIT_FAILURE);
+    }
+
+    VkMemoryRequirements memRequirements = {};
+    vkGetBufferMemoryRequirements(device, vertexBuffer.handle, &memRequirements);
+
+    VkMemoryAllocateInfo allocInfo = {};
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = memRequirements.size;
+    allocInfo.memoryTypeIndex = findVkMemoryType(
+        memRequirements.memoryTypeBits, 
+        &physicalDevice->memProperties, 
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+    );
+    if (allocInfo.memoryTypeIndex == UINT32_MAX){
+        fprintf(stderr, "Failed to find suitable memory type for Vertex Buffer\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (vkAllocateMemory(device, &allocInfo, NULL, &vertexBuffer.memory)){
+        fprintf(stderr, "Failed to allocate memory for Vertex Buffer\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (vkBindBufferMemory(device, vertexBuffer.handle, vertexBuffer.memory, 0)){
+        fprintf(stderr, "Failed to bind memory to Vertex Buffer\n");
+        exit(EXIT_FAILURE);
+    }
+
+    vertexBuffer.size = bufferInfo.size;
+    vertexBuffer.physicalSize = memRequirements.size;
+    return vertexBuffer;
+}
+
+VkState initVkState(const Window *window){
+    VkState vkstate{};
+    vkstate.instance = createInstance("Anemos", VK_MAKE_VERSION(0, 1, 0), "Moebius", VK_MAKE_VERSION(0, 1, 0));
+    vkstate.surface = createSurface(vkstate.instance, window->handle);
+    vkstate.physicalDevice = selectPhysicalDevice(vkstate.instance, vkstate.surface);
+    QueueFamilyIndices queueFamilyIndices = findQueueFamilyIndices(vkstate.physicalDevice.handle, vkstate.surface);
+    vkstate.logicalDevice = createLogicalDevice(vkstate.physicalDevice.handle, queueFamilyIndices);
+    vkGetDeviceQueue(vkstate.logicalDevice, queueFamilyIndices.graphicsQueue, 0, &vkstate.graphicsQueue);
+    vkGetDeviceQueue(vkstate.logicalDevice, queueFamilyIndices.presentQueue, 0, &vkstate.presentQueue);
+    vkstate.swapchain = createSwapchain(vkstate.logicalDevice, vkstate.physicalDevice.handle, vkstate.surface, window->handle);
+    vkstate.renderPass = createRenderPass(vkstate.logicalDevice, &vkstate.swapchain);
+    vkstate.pipeline = createGraphicsPipeline(vkstate.logicalDevice, vkstate.renderPass, &vkstate.swapchain);
+    vkstate.framebuffers = createFramebuffers(vkstate.logicalDevice, vkstate.renderPass, &vkstate.swapchain);
+    vkstate.vertexBuffer = createVertexBuffer(vkstate.logicalDevice, &vkstate.physicalDevice);
+    vkstate.commandPool = createCommandPool(vkstate.logicalDevice, queueFamilyIndices.graphicsQueue);
+    vkstate.frameStates = createFrameStates(vkstate.logicalDevice, vkstate.commandPool, MAX_FRAMES_IN_FLIGHT);
+
+    return vkstate;
 }

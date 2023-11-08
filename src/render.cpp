@@ -3,13 +3,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "vkstate.h"
+#include "int.h"
 
 void recordDrawCommand(
     VkCommandBuffer commandBuffer, 
     VkRenderPass renderPass, 
     VkFramebuffer framebuffer, 
     VkPipeline graphicsPipeline,
-    const SwapchainDetails *swapchainDetails){
+    const SwapchainDetails *swapchainDetails,
+    Buffer vertexBuffer,
+    VkDeviceSize vertexBufferOffset,
+    u32 vertexCount)
+{
 
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -36,6 +41,8 @@ void recordDrawCommand(
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
+    vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer.handle, &vertexBufferOffset);
+
     VkViewport viewport{};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
@@ -50,7 +57,7 @@ void recordDrawCommand(
     scissor.extent = swapchainDetails->extent;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+    vkCmdDraw(commandBuffer, vertexCount, 1, 0, 0);
 
     vkCmdEndRenderPass(commandBuffer);
 

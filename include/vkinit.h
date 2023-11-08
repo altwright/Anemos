@@ -1,9 +1,10 @@
 #pragma once
 #include <vulkan/vulkan.h>
 #include "vkstate.h"
+#include "window.h"
 
 VkInstance createInstance(const char *appName, uint32_t appVersion, const char *engineName, uint32_t engineVersion);
-VkPhysicalDevice selectPhysicalDevice(VkInstance instance, VkSurfaceKHR surface);
+PhysicalDeviceDetails selectPhysicalDevice(VkInstance instance, VkSurfaceKHR surface);
 QueueFamilyIndices findQueueFamilyIndices(VkPhysicalDevice device, VkSurfaceKHR surface);
 VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice, QueueFamilyIndices indices);
 VkSurfaceKHR createSurface(VkInstance instance, GLFWwindow *window);
@@ -24,3 +25,5 @@ void recreateSwapchain(
     GLFWwindow *window,
     SwapchainDetails *swapchainDetails,
     Framebuffers *framebuffers);
+Buffer createVertexBuffer(VkDevice device, const PhysicalDeviceDetails *physicalDevice);
+VkState initVkState(const Window *window);
