@@ -8,4 +8,6 @@ target_sources(anemos PRIVATE
     render.cpp
     vertex.cpp
     vkmemory.cpp
+    vkdescriptor.cpp
+    timing.cpp
 )

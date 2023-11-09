@@ -10,6 +10,7 @@
 #include "render.h"
 #include "vertex.h"
 #include "vkmemory.h"
+#include "vkdescriptor.h"
 
 #define WIDTH 640
 #define HEIGHT 480
@@ -21,14 +22,14 @@ int main(int, char**){
         return EXIT_FAILURE;
     }
 
-    VkState vkstate = initVkState(&window);
+    VkState vk = initVkState(&window);
 
     copyDataToLocalBuffer(
-        vkstate.logicalDevice,
-        &vkstate.physicalDevice,
-        vkstate.transferCommandPool,
-        vkstate.graphicsQueue,
-        vkstate.vertexBuffer,
+        vk.device,
+        &vk.physicalDevice,
+        vk.transferCommandPool,
+        vk.graphicsQueue,
+        vk.vertexBuffer,
         0,
         vertices,
         VERTEX_COUNT,
@@ -36,11 +37,11 @@ int main(int, char**){
     );
 
     copyDataToLocalBuffer(
-        vkstate.logicalDevice,
-        &vkstate.physicalDevice,
-        vkstate.transferCommandPool,
-        vkstate.graphicsQueue,
-        vkstate.indexBuffer,
+        vk.device,
+        &vk.physicalDevice,
+        vk.transferCommandPool,
+        vk.graphicsQueue,
+        vk.indexBuffer,
         0,
         indices,
         INDEX_COUNT,
@@ -49,20 +50,20 @@ int main(int, char**){
 
     uint32_t currentFrame = 0;
     while (!glfwWindowShouldClose(window.handle)) {
-        vkWaitForFences(vkstate.logicalDevice, 1, &vkstate.frameStates[currentFrame].synchronisers.inFlight, VK_TRUE, UINT64_MAX);
+        vkWaitForFences(vk.device, 1, &vk.frameStates[currentFrame].synchronisers.inFlight, VK_TRUE, UINT64_MAX);
 
         uint32_t imageIndex;//Will refer to a VkImage in our swapchain images array
-        VkResult result = vkAcquireNextImageKHR(vkstate.logicalDevice, vkstate.swapchain.handle, UINT64_MAX, vkstate.frameStates[currentFrame].synchronisers.imageAvailable, VK_NULL_HANDLE, &imageIndex);
+        VkResult result = vkAcquireNextImageKHR(vk.device, vk.swapchain.handle, UINT64_MAX, vk.frameStates[currentFrame].synchronisers.imageAvailable, VK_NULL_HANDLE, &imageIndex);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR){
             recreateSwapchain(
-                vkstate.logicalDevice, 
-                vkstate.physicalDevice.handle, 
-                vkstate.surface, 
-                vkstate.renderPass, 
+                vk.device, 
+                vk.physicalDevice.handle, 
+                vk.surface, 
+                vk.renderPass, 
                 window.handle,
-                &vkstate.swapchain,
-                &vkstate.framebuffers
+                &vk.swapchain,
+                &vk.framebuffers
             );
             continue;
         }
@@ -71,48 +72,51 @@ int main(int, char**){
             exit(EXIT_FAILURE);
         }
 
-        vkResetFences(vkstate.logicalDevice, 1, &vkstate.frameStates[currentFrame].synchronisers.inFlight);
+        vkResetFences(vk.device, 1, &vk.frameStates[currentFrame].synchronisers.inFlight);
 
-        vkResetCommandBuffer(vkstate.frameStates[currentFrame].commandBuffer, 0);
+        vkResetCommandBuffer(vk.frameStates[currentFrame].commandBuffer, 0);
+
+        updateUniformBuffer(vk.descriptors.sets[currentFrame].mappedBuffer, vk.swapchain.extent);
 
         recordDrawCommand(
-            vkstate.frameStates[currentFrame].commandBuffer,
-            vkstate.renderPass,
-            vkstate.framebuffers.handles[imageIndex],
-            vkstate.pipeline.handle,
-            &vkstate.swapchain,
-            vkstate.vertexBuffer,
+            vk.frameStates[currentFrame].commandBuffer,
+            vk.renderPass,
+            vk.framebuffers.handles[imageIndex],
+            vk.graphicsPipeline,
+            &vk.swapchain,
+            vk.descriptors.sets[currentFrame].handle,
+            vk.vertexBuffer,
             0,
             VERTEX_COUNT,
-            vkstate.indexBuffer,
+            vk.indexBuffer,
             0,
             INDEX_COUNT
         );
 
         submitDrawCommand(
-            vkstate.graphicsQueue,
-            vkstate.frameStates[currentFrame].commandBuffer,
-            vkstate.frameStates[currentFrame].synchronisers.imageAvailable,
-            vkstate.frameStates[currentFrame].synchronisers.renderFinished,
-            vkstate.frameStates[currentFrame].synchronisers.inFlight
+            vk.graphicsQueue,
+            vk.frameStates[currentFrame].commandBuffer,
+            vk.frameStates[currentFrame].synchronisers.imageAvailable,
+            vk.frameStates[currentFrame].synchronisers.renderFinished,
+            vk.frameStates[currentFrame].synchronisers.inFlight
         );
 
         result = presentSwapchain(
-            vkstate.presentQueue,
-            vkstate.frameStates[currentFrame].synchronisers.renderFinished,
-            vkstate.swapchain.handle,
+            vk.presentQueue,
+            vk.frameStates[currentFrame].synchronisers.renderFinished,
+            vk.swapchain.handle,
             imageIndex
         );
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || window.resized){
             recreateSwapchain(
-                vkstate.logicalDevice,
-                vkstate.physicalDevice.handle,
-                vkstate.surface,
-                vkstate.renderPass,
+                vk.device,
+                vk.physicalDevice.handle,
+                vk.surface,
+                vk.renderPass,
                 window.handle,
-                &vkstate.swapchain,
-                &vkstate.framebuffers
+                &vk.swapchain,
+                &vk.framebuffers
             );
 
             window.resized = false;
@@ -128,10 +132,10 @@ int main(int, char**){
         glfwPollEvents();
     }
 
-    vkDeviceWaitIdle(vkstate.logicalDevice);
+    vkDeviceWaitIdle(vk.device);
 
     destroyWindow(&window);
-    destroyVkState(&vkstate);
+    destroyVkState(&vk);
 
     return 0;
 }

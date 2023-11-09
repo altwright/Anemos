@@ -12,6 +12,7 @@
 #include "window.h"
 #include "vertex.h"
 #include "vkmemory.h"
+#include "vkdescriptor.h"
 
 VkInstance createInstance(const char *appName, uint32_t appVersion, const char *engineName, uint32_t engineVersion){
     VkApplicationInfo appInfo{
@@ -468,7 +469,121 @@ VkRenderPass createRenderPass(VkDevice device, const SwapchainDetails *swapchain
     return renderPass;
 }
 
-PipelineDetails createGraphicsPipeline(VkDevice device, VkRenderPass renderPass, const SwapchainDetails *swapchainDetails){
+Descriptors createDescriptors(
+    VkDevice device,
+    const PhysicalDeviceDetails *physicalDevice,
+    VkDescriptorPool descriptorPool,
+    size_t numFramesInFlight)
+{
+    VkDescriptorSetLayoutBinding uboLayoutBinding = {};
+    uboLayoutBinding.binding = 0;
+    uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uboLayoutBinding.descriptorCount = 1;
+    uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+    VkDescriptorSetLayoutCreateInfo layoutInfo = {};
+    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    layoutInfo.bindingCount = 1;
+    layoutInfo.pBindings = &uboLayoutBinding;
+
+    Descriptors descriptors = {};
+    if (vkCreateDescriptorSetLayout(device, &layoutInfo, NULL, &descriptors.layout)){
+        fprintf(stderr, "Failed to create Descriptor Set Layout\n");
+        exit(EXIT_FAILURE);
+    }
+
+    descriptors.setsCount = numFramesInFlight;
+    descriptors.sets = (DescriptorSet*)malloc(sizeof(DescriptorSet)*descriptors.setsCount);
+    if (!descriptors.sets){
+        fprintf(stderr, "Failed to allocate sets for Descriptors\n");
+        exit(EXIT_FAILURE);
+    }
+
+    VkDescriptorSetLayout *layouts = (VkDescriptorSetLayout*)malloc(sizeof(VkDescriptorSetLayout)*descriptors.setsCount);//free
+    if (!layouts){
+        fprintf(stderr, "Failed to allocate Descriptor Set Layout array\n");
+        exit(EXIT_FAILURE);
+    }
+
+    for (size_t i = 0; i < descriptors.setsCount; i++){
+        descriptors.sets[i].buffer = createBuffer(
+            device,
+            physicalDevice,
+            sizeof(UniformBufferData),
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+        );
+
+        vkMapMemory(
+            device,
+            descriptors.sets[i].buffer.memory,
+            0,
+            descriptors.sets[i].buffer.size,
+            0,
+            &descriptors.sets[i].mappedBuffer
+        );
+
+        layouts[i] = descriptors.layout;
+    }
+
+    VkDescriptorSetAllocateInfo allocInfo = {};
+    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool = descriptorPool;
+    allocInfo.descriptorSetCount = descriptors.setsCount;
+    allocInfo.pSetLayouts = layouts;
+
+    VkDescriptorSet *descriptorSets = (VkDescriptorSet*)malloc(sizeof(VkDescriptorSet)*descriptors.setsCount);//free
+    if (!descriptorSets){
+        fprintf(stderr, "Failed to malloc Descriptor Sets array\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (vkAllocateDescriptorSets(device, &allocInfo, descriptorSets)){
+        fprintf(stderr, "Failed to allocate Descriptor Sets\n");
+        exit(EXIT_FAILURE);
+    }
+
+    for (size_t i = 0; i < descriptors.setsCount; i++){
+        descriptors.sets[i].handle = descriptorSets[i];
+
+        VkDescriptorBufferInfo bufferInfo = {};
+        bufferInfo.buffer = descriptors.sets[i].buffer.handle;
+        bufferInfo.offset = 0;
+        bufferInfo.range = descriptors.sets[i].buffer.size;
+
+        VkWriteDescriptorSet writeDescriptorUpdate = {};
+        writeDescriptorUpdate.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        writeDescriptorUpdate.dstSet = descriptors.sets[i].handle;
+        writeDescriptorUpdate.dstBinding = 0;
+        //Remember that descriptors can be arrays, so we also need to specify 
+        //the first index in the array that we want to update
+        writeDescriptorUpdate.dstArrayElement = 0;
+        writeDescriptorUpdate.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        //It’s possible to update multiple descriptors at once in an array, 
+        //starting at index dstArrayElement. The descriptorCount field specifies 
+        //how many array elements you want to update.
+        writeDescriptorUpdate.descriptorCount = 1;
+        //The pBufferInfo field is used for descriptors that refer to buffer data, 
+        //pImageInfo is used for descriptors that refer to image data, and pTexelBufferView 
+        //is used for descriptors that refer to buffer views.
+        writeDescriptorUpdate.pBufferInfo = &bufferInfo;
+        writeDescriptorUpdate.pImageInfo = nullptr; // Optional
+        writeDescriptorUpdate.pTexelBufferView = nullptr; // Optional
+
+        vkUpdateDescriptorSets(device, 1, &writeDescriptorUpdate, 0, NULL);
+    }
+
+    free(descriptorSets);
+    free(layouts);
+    return descriptors;
+}
+
+PipelineDetails createGraphicsPipeline(
+    VkDevice device, 
+    VkRenderPass renderPass, 
+    const SwapchainDetails *swapchainDetails,
+    Descriptors descriptors)
+{
     #ifdef NDEBUG
     FileContents vertShader = readFileContents("shaders/vert.spv");
     FileContents fragShader = readFileContents("shaders/frag.spv");
@@ -535,7 +650,7 @@ PipelineDetails createGraphicsPipeline(VkDevice device, VkRenderPass renderPass,
     rasterizationInfo.polygonMode = VK_POLYGON_MODE_FILL;//Requires a GPU feature for any other mode
     rasterizationInfo.lineWidth = 1.0f;//Any thicker lines requires the widelines GPU feature
     rasterizationInfo.cullMode = VK_CULL_MODE_BACK_BIT;
-    rasterizationInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    rasterizationInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     rasterizationInfo.depthBiasEnable = VK_FALSE;
 
     VkPipelineMultisampleStateCreateInfo multisamplingInfo{};
@@ -570,8 +685,8 @@ PipelineDetails createGraphicsPipeline(VkDevice device, VkRenderPass renderPass,
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};//For specifying uniform variables
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 0; // Optional
-    pipelineLayoutInfo.pSetLayouts = nullptr; // Optional
+    pipelineLayoutInfo.setLayoutCount = 1; 
+    pipelineLayoutInfo.pSetLayouts = &descriptors.layout;
     pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
     pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
 
@@ -738,36 +853,67 @@ void recreateSwapchain(
     *framebuffers = createFramebuffers(device, renderPass, swapchainDetails);
 }
 
+VkDescriptorPool createDescriptorPool(VkDevice device, u32 numFramesInFlight)
+{
+    VkDescriptorPoolSize poolSize = {};
+    poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    poolSize.descriptorCount = numFramesInFlight;//Max descriptors
+
+    VkDescriptorPoolCreateInfo poolInfo = {};
+    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    poolInfo.poolSizeCount = 1;
+    poolInfo.pPoolSizes = &poolSize;
+    poolInfo.maxSets = numFramesInFlight;
+
+    VkDescriptorPool descriptorPool = NULL;
+    if (vkCreateDescriptorPool(device, &poolInfo, NULL, &descriptorPool)){
+        fprintf(stderr, "Failed to create Descriptor Pool\n");
+        exit(EXIT_FAILURE);
+    }
+
+    return descriptorPool;
+}
+
 VkState initVkState(const Window *window){
-    VkState vkstate{};
-    vkstate.instance = createInstance("Anemos", VK_MAKE_VERSION(0, 1, 0), "Moebius", VK_MAKE_VERSION(0, 1, 0));
-    vkstate.surface = createSurface(vkstate.instance, window->handle);
-    vkstate.physicalDevice = selectPhysicalDevice(vkstate.instance, vkstate.surface);
-    QueueFamilyIndices queueFamilyIndices = findQueueFamilyIndices(vkstate.physicalDevice.handle, vkstate.surface);
-    vkstate.logicalDevice = createLogicalDevice(vkstate.physicalDevice.handle, queueFamilyIndices);
-    vkGetDeviceQueue(vkstate.logicalDevice, queueFamilyIndices.graphicsQueue, 0, &vkstate.graphicsQueue);
-    vkGetDeviceQueue(vkstate.logicalDevice, queueFamilyIndices.presentQueue, 0, &vkstate.presentQueue);
-    vkstate.swapchain = createSwapchain(vkstate.logicalDevice, vkstate.physicalDevice.handle, vkstate.surface, window->handle);
-    vkstate.renderPass = createRenderPass(vkstate.logicalDevice, &vkstate.swapchain);
-    vkstate.pipeline = createGraphicsPipeline(vkstate.logicalDevice, vkstate.renderPass, &vkstate.swapchain);
-    vkstate.framebuffers = createFramebuffers(vkstate.logicalDevice, vkstate.renderPass, &vkstate.swapchain);
-    vkstate.vertexBuffer = createBuffer(
-        vkstate.logicalDevice,
-        &vkstate.physicalDevice,
+    VkState vk{};
+    vk.instance = createInstance("Anemos", VK_MAKE_VERSION(0, 1, 0), "Moebius", VK_MAKE_VERSION(0, 1, 0));
+    vk.surface = createSurface(vk.instance, window->handle);
+    vk.physicalDevice = selectPhysicalDevice(vk.instance, vk.surface);
+    QueueFamilyIndices queueFamilyIndices = findQueueFamilyIndices(vk.physicalDevice.handle, vk.surface);
+    vk.device = createLogicalDevice(vk.physicalDevice.handle, queueFamilyIndices);
+    vkGetDeviceQueue(vk.device, queueFamilyIndices.graphicsQueue, 0, &vk.graphicsQueue);
+    vkGetDeviceQueue(vk.device, queueFamilyIndices.presentQueue, 0, &vk.presentQueue);
+    vk.swapchain = createSwapchain(vk.device, vk.physicalDevice.handle, vk.surface, window->handle);
+    vk.renderPass = createRenderPass(vk.device, &vk.swapchain);
+    /*
+    The descriptor set layout specifies the types of resources that are going to be accessed 
+    by the pipeline, just like a render pass specifies the types of attachments that will be 
+    accessed. A descriptor set specifies the actual buffer or image resources that will be bound 
+    to the descriptors, just like a framebuffer specifies the actual image views to bind to render 
+    pass attachments. The descriptor set is then bound for the drawing commands just like the vertex 
+    buffers and framebuffer.
+    */
+    vk.descriptorPool = createDescriptorPool(vk.device, MAX_FRAMES_IN_FLIGHT);
+    vk.descriptors = createDescriptors(vk.device, &vk.physicalDevice, vk.descriptorPool, MAX_FRAMES_IN_FLIGHT);
+    vk.graphicsPipeline = createGraphicsPipeline(vk.device, vk.renderPass, &vk.swapchain, vk.descriptors);
+    vk.framebuffers = createFramebuffers(vk.device, vk.renderPass, &vk.swapchain);
+    vk.vertexBuffer = createBuffer(
+        vk.device,
+        &vk.physicalDevice,
         sizeof(Vertex)*VERTEX_COUNT,
         VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
     );
-    vkstate.indexBuffer = createBuffer(
-        vkstate.logicalDevice,
-        &vkstate.physicalDevice, 
+    vk.indexBuffer = createBuffer(
+        vk.device,
+        &vk.physicalDevice, 
         sizeof(indices[0])*INDEX_COUNT,
         VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
     );
-    vkstate.graphicsCommandPool = createCommandPool(vkstate.logicalDevice, queueFamilyIndices.graphicsQueue, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
-    vkstate.transferCommandPool = createCommandPool(vkstate.logicalDevice, queueFamilyIndices.graphicsQueue, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
-    vkstate.frameStates = createFrameStates(vkstate.logicalDevice, vkstate.graphicsCommandPool, MAX_FRAMES_IN_FLIGHT);
+    vk.graphicsCommandPool = createCommandPool(vk.device, queueFamilyIndices.graphicsQueue, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+    vk.transferCommandPool = createCommandPool(vk.device, queueFamilyIndices.graphicsQueue, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
+    vk.frameStates = createFrameStates(vk.device, vk.graphicsCommandPool, MAX_FRAMES_IN_FLIGHT);
 
-    return vkstate;
+    return vk;
 }

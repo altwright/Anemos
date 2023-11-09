@@ -9,8 +9,9 @@ void recordDrawCommand(
     VkCommandBuffer commandBuffer, 
     VkRenderPass renderPass, 
     VkFramebuffer framebuffer, 
-    VkPipeline graphicsPipeline,
+    PipelineDetails graphicsPipeline,
     const SwapchainDetails *swapchainDetails,
+    VkDescriptorSet descriptorSet,
     Buffer vertexBuffer,
     VkDeviceSize vertexBufferOffset,
     u32 vertexCount,
@@ -42,7 +43,7 @@ void recordDrawCommand(
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.handle);
 
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer.handle, &vertexBufferOffset);
 
@@ -61,6 +62,17 @@ void recordDrawCommand(
     scissor.offset = {0, 0};
     scissor.extent = swapchainDetails->extent;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+    vkCmdBindDescriptorSets(
+        commandBuffer, 
+        VK_PIPELINE_BIND_POINT_GRAPHICS, 
+        graphicsPipeline.layout, 
+        0, 
+        1, 
+        &descriptorSet, 
+        0, 
+        NULL
+    );
 
     vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
 

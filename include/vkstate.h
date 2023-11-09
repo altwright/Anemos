@@ -68,16 +68,30 @@ typedef struct PhysicalDeviceDetails{
     VkPhysicalDeviceMemoryProperties memProperties;
 } PhysicalDeviceDetails;
 
+typedef struct DescriptorSet{
+    VkDescriptorSet handle;
+    Buffer buffer;
+    void* mappedBuffer;
+} DescriptorSet;
+
+typedef struct Descriptors{
+    DescriptorSet *sets;//free
+    size_t setsCount;
+    VkDescriptorSetLayout layout;
+} Descriptors;
+
 typedef struct VkState{
     VkInstance instance;
     VkSurfaceKHR surface;
     PhysicalDeviceDetails physicalDevice;
-    VkDevice logicalDevice;
+    VkDevice device;
     VkQueue graphicsQueue;
     VkQueue presentQueue;
     SwapchainDetails swapchain;
     VkRenderPass renderPass;
-    PipelineDetails pipeline;
+    VkDescriptorPool descriptorPool;
+    Descriptors descriptors;
+    PipelineDetails graphicsPipeline;
     Framebuffers framebuffers;
     Buffer vertexBuffer;
     Buffer indexBuffer;

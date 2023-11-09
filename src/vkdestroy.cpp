@@ -15,36 +15,46 @@ void destroyFramebuffers(VkDevice device, Framebuffers *framebuffers){
     free(framebuffers->handles);
 }
 
-void destroyVkState(VkState *vkstate){
+void destroyVkState(VkState *vk){
     for(size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
-        vkDestroySemaphore(vkstate->logicalDevice, vkstate->frameStates[i].synchronisers.imageAvailable, NULL);
-        vkDestroySemaphore(vkstate->logicalDevice, vkstate->frameStates[i].synchronisers.renderFinished, NULL);
-        vkDestroyFence(vkstate->logicalDevice, vkstate->frameStates[i].synchronisers.inFlight, NULL);
+        vkDestroySemaphore(vk->device, vk->frameStates[i].synchronisers.imageAvailable, NULL);
+        vkDestroySemaphore(vk->device, vk->frameStates[i].synchronisers.renderFinished, NULL);
+        vkDestroyFence(vk->device, vk->frameStates[i].synchronisers.inFlight, NULL);
     }
-    free(vkstate->frameStates);
+    free(vk->frameStates);
 
-    vkDestroyCommandPool(vkstate->logicalDevice, vkstate->graphicsCommandPool, NULL);
-    vkDestroyCommandPool(vkstate->logicalDevice, vkstate->transferCommandPool, NULL);
+    vkDestroyCommandPool(vk->device, vk->graphicsCommandPool, NULL);
+    vkDestroyCommandPool(vk->device, vk->transferCommandPool, NULL);
 
-    vkDestroyPipeline(vkstate->logicalDevice, vkstate->pipeline.handle, NULL);
-    vkDestroyPipelineLayout(vkstate->logicalDevice, vkstate->pipeline.layout, NULL);
+    vkDestroyPipeline(vk->device, vk->graphicsPipeline.handle, NULL);
+    vkDestroyPipelineLayout(vk->device, vk->graphicsPipeline.layout, NULL);
 
-    destroyFramebuffers(vkstate->logicalDevice, &vkstate->framebuffers);
+    destroyFramebuffers(vk->device, &vk->framebuffers);
     
-    vkDestroyRenderPass(vkstate->logicalDevice, vkstate->renderPass, NULL);
+    vkDestroyRenderPass(vk->device, vk->renderPass, NULL);
 
-    destroySwapchainDetails(vkstate->logicalDevice, &vkstate->swapchain);
+    destroySwapchainDetails(vk->device, &vk->swapchain);
 
-    vkDestroyBuffer(vkstate->logicalDevice, vkstate->vertexBuffer.handle, NULL);
-    vkFreeMemory(vkstate->logicalDevice, vkstate->vertexBuffer.memory, NULL);
-    vkDestroyBuffer(vkstate->logicalDevice, vkstate->indexBuffer.handle, NULL);
-    vkFreeMemory(vkstate->logicalDevice, vkstate->indexBuffer.memory, NULL);
+    for (size_t i = 0; i < vk->descriptors.setsCount; i++){
+        vkUnmapMemory(vk->device, vk->descriptors.sets[i].buffer.memory);
+        vkDestroyBuffer(vk->device, vk->descriptors.sets[i].buffer.handle, NULL);
+        vkFreeMemory(vk->device, vk->descriptors.sets[i].buffer.memory, NULL);
+    }
+    free(vk->descriptors.sets);
 
-    vkDestroyDevice(vkstate->logicalDevice, NULL);
+    vkDestroyDescriptorPool(vk->device, vk->descriptorPool, NULL);
+    vkDestroyDescriptorSetLayout(vk->device, vk->descriptors.layout, NULL);
 
-    vkDestroySurfaceKHR(vkstate->instance, vkstate->surface, NULL);
+    vkDestroyBuffer(vk->device, vk->vertexBuffer.handle, NULL);
+    vkFreeMemory(vk->device, vk->vertexBuffer.memory, NULL);
+    vkDestroyBuffer(vk->device, vk->indexBuffer.handle, NULL);
+    vkFreeMemory(vk->device, vk->indexBuffer.memory, NULL);
 
-    vkDestroyInstance(vkstate->instance, NULL);
+    vkDestroyDevice(vk->device, NULL);
+
+    vkDestroySurfaceKHR(vk->instance, vk->surface, NULL);
+
+    vkDestroyInstance(vk->instance, NULL);
 }
 
 void destroySwapchainSupportDetails(SwapchainSupportDetails *details){
