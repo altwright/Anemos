@@ -29,3 +29,20 @@ void copyDataToLocalBuffer(
     const void *dataArray,
     size_t dataCount,
     size_t datatypeSize);
+void transitionImageLayout(
+    VkDevice device, 
+    VkCommandPool transientCommandPool,
+    VkQueue transferQueue,
+    VkImage texture,
+    VkImageLayout oldLayout,
+    VkImageLayout newLayout);
+void copyPixelsToLocalImage(
+    VkDevice device,
+    const PhysicalDeviceDetails *physicalDeviceDetails,
+    VkCommandPool transientCommandPool,
+    VkQueue transferQueue,
+    const void *texelsArray,
+    size_t texelSize,
+    u32 numTexelRows,
+    u32 numTexelCols,
+    VkImage dstImage);

@@ -1,5 +1,6 @@
 #pragma once
 #include <vulkan/vulkan.h>
+#include "int.h"
 
 #define VALIDATION_LAYERS_COUNT 1
 extern const char* VALIDATION_LAYERS[VALIDATION_LAYERS_COUNT];
@@ -51,10 +52,10 @@ typedef struct Synchronisers{
     VkFence inFlight;
 } Synchronisers;
 
-typedef struct FrameState{
+typedef struct FrameControllers{
     VkCommandBuffer commandBuffer;
     Synchronisers synchronisers;
-} FrameState;
+} FrameControllers;
 
 typedef struct Buffer{
     VkBuffer handle;
@@ -80,6 +81,14 @@ typedef struct Descriptors{
     VkDescriptorSetLayout layout;
 } Descriptors;
 
+typedef struct Image{
+    VkImage handle;
+    VkDeviceMemory memory;
+    u32 width;
+    u32 height;
+    u32 channels;
+} Image;
+
 typedef struct VkState{
     VkInstance instance;
     VkSurfaceKHR surface;
@@ -97,5 +106,6 @@ typedef struct VkState{
     Buffer indexBuffer;
     VkCommandPool graphicsCommandPool;
     VkCommandPool transferCommandPool;
-    FrameState *frameStates;//free
+    FrameControllers *frameContollers;//free
+    Image texture;
 } VkState;

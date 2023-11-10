@@ -7,7 +7,7 @@
 #include "vkstate.h"
 #include "vkinit.h"
 #include "vkdestroy.h"
-#include "render.h"
+#include "vkcommand.h"
 #include "vertex.h"
 #include "vkmemory.h"
 #include "vkdescriptor.h"
@@ -50,10 +50,10 @@ int main(int, char**){
 
     uint32_t currentFrame = 0;
     while (!glfwWindowShouldClose(window.handle)) {
-        vkWaitForFences(vk.device, 1, &vk.frameStates[currentFrame].synchronisers.inFlight, VK_TRUE, UINT64_MAX);
+        vkWaitForFences(vk.device, 1, &vk.frameContollers[currentFrame].synchronisers.inFlight, VK_TRUE, UINT64_MAX);
 
         uint32_t imageIndex;//Will refer to a VkImage in our swapchain images array
-        VkResult result = vkAcquireNextImageKHR(vk.device, vk.swapchain.handle, UINT64_MAX, vk.frameStates[currentFrame].synchronisers.imageAvailable, VK_NULL_HANDLE, &imageIndex);
+        VkResult result = vkAcquireNextImageKHR(vk.device, vk.swapchain.handle, UINT64_MAX, vk.frameContollers[currentFrame].synchronisers.imageAvailable, VK_NULL_HANDLE, &imageIndex);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR){
             recreateSwapchain(
@@ -72,14 +72,14 @@ int main(int, char**){
             exit(EXIT_FAILURE);
         }
 
-        vkResetFences(vk.device, 1, &vk.frameStates[currentFrame].synchronisers.inFlight);
+        vkResetFences(vk.device, 1, &vk.frameContollers[currentFrame].synchronisers.inFlight);
 
-        vkResetCommandBuffer(vk.frameStates[currentFrame].commandBuffer, 0);
+        vkResetCommandBuffer(vk.frameContollers[currentFrame].commandBuffer, 0);
 
         updateUniformBuffer(vk.descriptors.sets[currentFrame].mappedBuffer, vk.swapchain.extent);
 
         recordDrawCommand(
-            vk.frameStates[currentFrame].commandBuffer,
+            vk.frameContollers[currentFrame].commandBuffer,
             vk.renderPass,
             vk.framebuffers.handles[imageIndex],
             vk.graphicsPipeline,
@@ -95,15 +95,15 @@ int main(int, char**){
 
         submitDrawCommand(
             vk.graphicsQueue,
-            vk.frameStates[currentFrame].commandBuffer,
-            vk.frameStates[currentFrame].synchronisers.imageAvailable,
-            vk.frameStates[currentFrame].synchronisers.renderFinished,
-            vk.frameStates[currentFrame].synchronisers.inFlight
+            vk.frameContollers[currentFrame].commandBuffer,
+            vk.frameContollers[currentFrame].synchronisers.imageAvailable,
+            vk.frameContollers[currentFrame].synchronisers.renderFinished,
+            vk.frameContollers[currentFrame].synchronisers.inFlight
         );
 
         result = presentSwapchain(
             vk.presentQueue,
-            vk.frameStates[currentFrame].synchronisers.renderFinished,
+            vk.frameContollers[currentFrame].synchronisers.renderFinished,
             vk.swapchain.handle,
             imageIndex
         );

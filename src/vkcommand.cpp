@@ -1,4 +1,4 @@
-#include "render.h"
+#include "vkcommand.h"
 #include <vulkan/vulkan.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -114,8 +114,8 @@ VkResult presentSwapchain(
     VkQueue presentQueue, 
     VkSemaphore waitSemaphore,
     VkSwapchainKHR swapchain,
-    uint32_t swapchainImageIndex){
-
+    uint32_t swapchainImageIndex)
+{
     VkPresentInfoKHR presentInfo{};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.waitSemaphoreCount = 1;
@@ -125,4 +125,53 @@ VkResult presentSwapchain(
     presentInfo.pImageIndices = &swapchainImageIndex;
 
     return vkQueuePresentKHR(presentQueue, &presentInfo);
+}
+
+VkCommandBuffer beginSingleTimeCommand(VkDevice device, VkCommandPool transientCommandPool)
+{
+    VkCommandBufferAllocateInfo allocInfo = {};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandPool = transientCommandPool;
+    allocInfo.commandBufferCount = 1;
+
+    VkCommandBuffer commandBuffer = NULL;
+    if (vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer)){
+        fprintf(stderr, "Failed to allocated Single Use Command Buffer\n");
+        exit(EXIT_FAILURE);
+    }
+
+    VkCommandBufferBeginInfo beginInfo = {};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+    return commandBuffer;
+}
+
+void submitSingleTimeCommand(
+    VkDevice device, 
+    VkCommandPool transientCommandPool, 
+    VkCommandBuffer commandBuffer, 
+    VkQueue queue)
+{
+    vkEndCommandBuffer(commandBuffer);
+
+    VkSubmitInfo submitInfo = {};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+
+    if (vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE)){
+        fprintf(stderr, "Failed to submit single time command to Queue\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (vkQueueWaitIdle(queue)){
+        fprintf(stderr, "Failure waiting for Queue to Idle\n");
+        exit(EXIT_FAILURE);
+    }
+
+    vkFreeCommandBuffers(device, transientCommandPool, 1, &commandBuffer);
 }

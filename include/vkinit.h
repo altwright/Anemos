@@ -27,7 +27,7 @@ Framebuffers createFramebuffers(VkDevice device, VkRenderPass renderPass, const 
 VkCommandPool createCommandPool(VkDevice device, uint32_t queueIndex, VkCommandPoolCreateFlags createFlags);
 VkCommandBuffer createCommandBuffer(VkDevice device, VkCommandPool commandPool);
 Synchronisers createSynchronisers(VkDevice device);
-FrameState* createFrameStates(VkDevice device, VkCommandPool commandPool, size_t numFrames);
+FrameControllers* createFrameStates(VkDevice device, VkCommandPool commandPool, size_t numFrames);
 void recreateSwapchain(
     VkDevice device,
     VkPhysicalDevice physicalDevice,
@@ -36,4 +36,9 @@ void recreateSwapchain(
     GLFWwindow *window,
     SwapchainDetails *swapchainDetails,
     Framebuffers *framebuffers);
+Image createTexture(
+    VkDevice device, 
+    const PhysicalDeviceDetails *physicalDeviceDetails,
+    VkCommandPool transientCommandPool,
+    VkQueue transferQueue);
 VkState initVkState(const Window *window);

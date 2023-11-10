@@ -5,9 +5,10 @@ target_sources(anemos PRIVATE
     vkstate.cpp
     vkdestroy.cpp
     load.cpp
-    render.cpp
+    vkcommand.cpp
     vertex.cpp
     vkmemory.cpp
     vkdescriptor.cpp
     timing.cpp
+    vkimage.cpp
 )

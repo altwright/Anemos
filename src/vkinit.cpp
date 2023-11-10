@@ -1,11 +1,11 @@
 #define GLFW_INCLUDE_VULKAN
+#include "vkinit.h"
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <algorithm>
-#include "vkinit.h"
 #include "vkstate.h"
 #include "vkdestroy.h"
 #include "load.h"
@@ -13,6 +13,8 @@
 #include "vertex.h"
 #include "vkmemory.h"
 #include "vkdescriptor.h"
+#include "stb_image.h"
+#include "vkimage.h"
 
 VkInstance createInstance(const char *appName, uint32_t appVersion, const char *engineName, uint32_t engineVersion){
     VkApplicationInfo appInfo{
@@ -813,8 +815,8 @@ Synchronisers createSynchronisers(VkDevice device){
     return synchronisers;
 }
 
-FrameState* createFrameStates(VkDevice device, VkCommandPool commandPool, size_t numFrames){
-    FrameState *frameStates = (FrameState*)malloc(sizeof(FrameState)*numFrames);
+FrameControllers* createFrameStates(VkDevice device, VkCommandPool commandPool, size_t numFrames){
+    FrameControllers *frameStates = (FrameControllers*)malloc(sizeof(FrameControllers)*numFrames);
     if (!frameStates){
         printf("Failed to allocated FrameStates\n");
         exit(EXIT_FAILURE);
@@ -874,6 +876,71 @@ VkDescriptorPool createDescriptorPool(VkDevice device, u32 numFramesInFlight)
     return descriptorPool;
 }
 
+Image createTexture(
+    VkDevice device, 
+    const PhysicalDeviceDetails *physicalDeviceDetails,
+    VkCommandPool transientCommandPool,
+    VkQueue transferQueue)
+{
+    int width, height, fileChannels = 0;
+
+    stbi_uc *texels = stbi_load(
+        "../textures/texture.jpg", 
+        &width, 
+        &height, 
+        &fileChannels,
+        STBI_rgb_alpha
+    );
+
+    if (!texels){
+        fprintf(stderr, "Failed to load Texture Pixels\n");
+        exit(EXIT_FAILURE);
+    }
+
+    Image texture = createImage(
+        device, 
+        &physicalDeviceDetails->memProperties,
+        width,
+        height,
+        STBI_rgb_alpha,
+        VK_FORMAT_R8G8B8A8_SRGB,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    transitionImageLayout(
+        device,
+        transientCommandPool,
+        transferQueue,
+        texture.handle,
+        VK_IMAGE_LAYOUT_UNDEFINED,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+    copyPixelsToLocalImage(
+        device,
+        physicalDeviceDetails,
+        transientCommandPool,
+        transferQueue,
+        texels,
+        sizeof(stbi_uc)*STBI_rgb_alpha,
+        texture.height,
+        texture.width,
+        texture.handle);
+
+    transitionImageLayout(
+        device,
+        transientCommandPool,
+        transferQueue,
+        texture.handle,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+    );
+
+    stbi_image_free(texels);
+
+    return texture;
+}
+
 VkState initVkState(const Window *window){
     VkState vk{};
     vk.instance = createInstance("Anemos", VK_MAKE_VERSION(0, 1, 0), "Moebius", VK_MAKE_VERSION(0, 1, 0));
@@ -913,7 +980,8 @@ VkState initVkState(const Window *window){
     );
     vk.graphicsCommandPool = createCommandPool(vk.device, queueFamilyIndices.graphicsQueue, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
     vk.transferCommandPool = createCommandPool(vk.device, queueFamilyIndices.graphicsQueue, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
-    vk.frameStates = createFrameStates(vk.device, vk.graphicsCommandPool, MAX_FRAMES_IN_FLIGHT);
+    vk.frameContollers = createFrameStates(vk.device, vk.graphicsCommandPool, MAX_FRAMES_IN_FLIGHT);
+    vk.texture = createTexture(vk.device, &vk.physicalDevice, vk.transferCommandPool, vk.graphicsQueue);
 
     return vk;
 }
