@@ -152,8 +152,17 @@ bool checkPhysicalDeviceFeatureSupport(VkPhysicalDevice device)
         candidateDepthBufferFormatsCount, 
         VK_IMAGE_TILING_OPTIMAL,
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+
+    VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures separateDepthStencilLayouts = {};
+    separateDepthStencilLayouts.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SEPARATE_DEPTH_STENCIL_LAYOUTS_FEATURES;
+    VkPhysicalDeviceFeatures2 supportedFeatures2 = {};
+    supportedFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    supportedFeatures2.pNext = &separateDepthStencilLayouts;
+    vkGetPhysicalDeviceFeatures2(device, &supportedFeatures2);
     
-    return supportedFeatures.samplerAnisotropy && (depthBufferFormat != VK_FORMAT_MAX_ENUM);
+    return supportedFeatures.samplerAnisotropy && 
+        (depthBufferFormat != VK_FORMAT_MAX_ENUM) && 
+        separateDepthStencilLayouts.separateDepthStencilLayouts;
 }
 
 PhysicalDeviceDetails selectPhysicalDevice(VkInstance instance, VkSurfaceKHR surface){
@@ -287,6 +296,12 @@ VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice, QueueFamilyIndices
     createInfo.enabledExtensionCount = DEVICE_EXTENSIONS_COUNT;
     createInfo.ppEnabledExtensionNames = DEVICE_EXTENSIONS;
     createInfo.pEnabledFeatures = &deviceFeatures;
+
+    VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures separateDepthStencilFeature = {};
+    separateDepthStencilFeature.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SEPARATE_DEPTH_STENCIL_LAYOUTS_FEATURES;
+    separateDepthStencilFeature.separateDepthStencilLayouts = VK_TRUE;
+
+    createInfo.pNext = &separateDepthStencilFeature;
 
     VkDevice device;
     if (vkCreateDevice(physicalDevice, &createInfo, NULL, &device)){
