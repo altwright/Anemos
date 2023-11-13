@@ -5,10 +5,10 @@
 #include "vkstate.h"
 
 const Vertex vertices[VERTEX_COUNT] = {
-    {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-    {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-    {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-    {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
+    {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+    {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+    {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+    {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
 };
 
 const u16 indices[INDEX_COUNT] = {
@@ -29,16 +29,10 @@ VkVertexInputBindingDescription getVertexBindingDescription(){
 
 VertexInputAttributes getVertexInputAttributes(){
     VertexInputAttributes attributes = {};
-    attributes.count = 3;
-    attributes.descriptions = (VkVertexInputAttributeDescription*)malloc(sizeof(VkVertexInputAttributeDescription)*attributes.count);
-    if (!attributes.descriptions){
-        perror("Failed to malloc Vertex Input Attributes\n");
-        exit(EXIT_FAILURE);
-    }
 
     attributes.descriptions[0].binding = 0;
     attributes.descriptions[0].location = 0;
-    attributes.descriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
+    attributes.descriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
     attributes.descriptions[0].offset = offsetof(Vertex, pos);
 
     attributes.descriptions[1].binding = 0;

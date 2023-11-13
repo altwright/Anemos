@@ -661,7 +661,7 @@ PipelineDetails createGraphicsPipeline(
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertexInputInfo.vertexBindingDescriptionCount = 1;
     vertexInputInfo.pVertexBindingDescriptions = &bindingDesc;
-    vertexInputInfo.vertexAttributeDescriptionCount = attributes.count;
+    vertexInputInfo.vertexAttributeDescriptionCount = VERTEX_ATTRIBUTE_COUNT;
     vertexInputInfo.pVertexAttributeDescriptions = attributes.descriptions;
 
     VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo{};
@@ -766,7 +766,6 @@ PipelineDetails createGraphicsPipeline(
 
     free(vertShader.bytes);
     free(fragShader.bytes);
-    free(attributes.descriptions);
     vkDestroyShaderModule(device, vertShaderModule, NULL);
     vkDestroyShaderModule(device, fragShaderModule, NULL);
 
