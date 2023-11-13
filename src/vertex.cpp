@@ -5,10 +5,10 @@
 #include "vkstate.h"
 
 const Vertex vertices[VERTEX_COUNT] = {
-    {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-    {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-    {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-    {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+    {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+    {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+    {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+    {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
 };
 
 const u16 indices[INDEX_COUNT] = {
@@ -16,7 +16,7 @@ const u16 indices[INDEX_COUNT] = {
 };
 
 VkVertexInputBindingDescription getVertexBindingDescription(){
-    VkVertexInputBindingDescription bindingDesc = {0};
+    VkVertexInputBindingDescription bindingDesc = {};
     bindingDesc.binding = 0;
     bindingDesc.stride = sizeof(Vertex);
     bindingDesc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
@@ -28,8 +28,8 @@ VkVertexInputBindingDescription getVertexBindingDescription(){
 }
 
 VertexInputAttributes getVertexInputAttributes(){
-    VertexInputAttributes attributes = {0};
-    attributes.count = 2;
+    VertexInputAttributes attributes = {};
+    attributes.count = 3;
     attributes.descriptions = (VkVertexInputAttributeDescription*)malloc(sizeof(VkVertexInputAttributeDescription)*attributes.count);
     if (!attributes.descriptions){
         perror("Failed to malloc Vertex Input Attributes\n");
@@ -45,6 +45,11 @@ VertexInputAttributes getVertexInputAttributes(){
     attributes.descriptions[1].location = 1;
     attributes.descriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
     attributes.descriptions[1].offset = offsetof(Vertex, colour);
+
+    attributes.descriptions[2].binding = 0;
+    attributes.descriptions[2].location = 2;
+    attributes.descriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
+    attributes.descriptions[2].offset = offsetof(Vertex, texCoord);
 
     return attributes;
 }

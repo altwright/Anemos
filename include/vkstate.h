@@ -67,6 +67,7 @@ typedef struct Buffer{
 typedef struct PhysicalDeviceDetails{
     VkPhysicalDevice handle;
     VkPhysicalDeviceMemoryProperties memProperties;
+    VkPhysicalDeviceProperties deviceProperties;
 } PhysicalDeviceDetails;
 
 typedef struct DescriptorSet{
@@ -84,6 +85,7 @@ typedef struct Descriptors{
 typedef struct Image{
     VkImage handle;
     VkDeviceMemory memory;
+    VkImageView view;
     u32 width;
     u32 height;
     u32 channels;
@@ -106,6 +108,7 @@ typedef struct VkState{
     Buffer indexBuffer;
     VkCommandPool graphicsCommandPool;
     VkCommandPool transferCommandPool;
-    FrameControllers *frameContollers;//free
+    FrameControllers *frameControllers;//free
     Image texture;
+    VkSampler textureSampler;
 } VkState;

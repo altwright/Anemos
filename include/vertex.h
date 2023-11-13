@@ -7,6 +7,7 @@
 typedef struct Vertex{
     vec2 pos;
     vec3 colour;
+    vec2 texCoord;
 } Vertex;
 
 typedef struct VertexInputAttributes{

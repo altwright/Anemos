@@ -115,6 +115,14 @@ bool checkPhysicalDeviceExtensionSupport(VkPhysicalDevice device){
         return true;
 }
 
+bool checkPhysicalDeviceFeatureSupport(VkPhysicalDevice device)
+{
+    VkPhysicalDeviceFeatures supportedFeatures = {};
+    vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
+
+    return supportedFeatures.samplerAnisotropy;
+}
+
 PhysicalDeviceDetails selectPhysicalDevice(VkInstance instance, VkSurfaceKHR surface){
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(instance, &deviceCount, NULL);
@@ -143,8 +151,9 @@ PhysicalDeviceDetails selectPhysicalDevice(VkInstance instance, VkSurfaceKHR sur
         bool suitableFound = false;
         if (indices.graphicsQueue < indices.queueFamilyCount &&
             indices.presentQueue < indices.queueFamilyCount &&
-            checkPhysicalDeviceExtensionSupport(physicalDevices[i])
-        ){
+            checkPhysicalDeviceExtensionSupport(physicalDevices[i]) &&
+            checkPhysicalDeviceFeatureSupport(physicalDevices[i]))
+        {
             SwapchainSupportDetails swapchainSupport = querySwapchainSupport(physicalDevices[i], surface);
             if (swapchainSupport.formatsCount > 0 && swapchainSupport.presentModesCount > 0){
                 selectedDevice = physicalDevices[i];
@@ -159,21 +168,20 @@ PhysicalDeviceDetails selectPhysicalDevice(VkInstance instance, VkSurfaceKHR sur
 
     free(physicalDevices);
 
+    PhysicalDeviceDetails physicalDeviceDetails = {};
+    physicalDeviceDetails.handle = selectedDevice;
+    vkGetPhysicalDeviceMemoryProperties(physicalDeviceDetails.handle, &physicalDeviceDetails.memProperties);
+    vkGetPhysicalDeviceProperties(physicalDeviceDetails.handle, &physicalDeviceDetails.deviceProperties);
+
     #ifdef NDEBUG
     #else
-    VkPhysicalDeviceProperties deviceProperties;
-    vkGetPhysicalDeviceProperties(selectedDevice, &deviceProperties);
-    printf("Selected GPU: %s\n", deviceProperties.deviceName);
+    printf("Selected GPU: %s\n", &physicalDeviceDetails.deviceProperties.deviceName);
     #endif
 
     if (!selectedDevice){
         printf("No GPU is suitable\n");
         exit(EXIT_FAILURE);
     }
-
-    PhysicalDeviceDetails physicalDeviceDetails = {};
-    physicalDeviceDetails.handle = selectedDevice;
-    vkGetPhysicalDeviceMemoryProperties(physicalDeviceDetails.handle, &physicalDeviceDetails.memProperties);
 
     return physicalDeviceDetails;
 }
@@ -236,9 +244,10 @@ VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice, QueueFamilyIndices
         queueCreateInfos[1] = queueCreateInfo;
     }
 
-    VkPhysicalDeviceFeatures deviceFeatures{};
+    VkPhysicalDeviceFeatures deviceFeatures = {};
+    deviceFeatures.samplerAnisotropy = VK_TRUE;
 
-    VkDeviceCreateInfo createInfo{};
+    VkDeviceCreateInfo createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     createInfo.queueCreateInfoCount = queueCreateInfoCount;
     createInfo.pQueueCreateInfos = queueCreateInfos;
@@ -475,6 +484,8 @@ Descriptors createDescriptors(
     VkDevice device,
     const PhysicalDeviceDetails *physicalDevice,
     VkDescriptorPool descriptorPool,
+    VkSampler textureSampler,
+    Image texture,
     size_t numFramesInFlight)
 {
     VkDescriptorSetLayoutBinding uboLayoutBinding = {};
@@ -483,10 +494,19 @@ Descriptors createDescriptors(
     uboLayoutBinding.descriptorCount = 1;
     uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
+    VkDescriptorSetLayoutBinding samplerLayoutBinding = {};
+    samplerLayoutBinding.binding = 1;
+    samplerLayoutBinding.descriptorCount = 1;
+    samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    samplerLayoutBinding.pImmutableSamplers = NULL;
+    samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    VkDescriptorSetLayoutBinding bindings[2] = {uboLayoutBinding, samplerLayoutBinding};
+
     VkDescriptorSetLayoutCreateInfo layoutInfo = {};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.bindingCount = 1;
-    layoutInfo.pBindings = &uboLayoutBinding;
+    layoutInfo.bindingCount = 2;
+    layoutInfo.pBindings = bindings;
 
     Descriptors descriptors = {};
     if (vkCreateDescriptorSetLayout(device, &layoutInfo, NULL, &descriptors.layout)){
@@ -497,13 +517,13 @@ Descriptors createDescriptors(
     descriptors.setsCount = numFramesInFlight;
     descriptors.sets = (DescriptorSet*)malloc(sizeof(DescriptorSet)*descriptors.setsCount);
     if (!descriptors.sets){
-        fprintf(stderr, "Failed to allocate sets for Descriptors\n");
+        fprintf(stderr, "Failed to malloc sets for Descriptors\n");
         exit(EXIT_FAILURE);
     }
 
     VkDescriptorSetLayout *layouts = (VkDescriptorSetLayout*)malloc(sizeof(VkDescriptorSetLayout)*descriptors.setsCount);//free
     if (!layouts){
-        fprintf(stderr, "Failed to allocate Descriptor Set Layout array\n");
+        fprintf(stderr, "Failed to malloc Descriptor Set Layout array\n");
         exit(EXIT_FAILURE);
     }
 
@@ -553,26 +573,42 @@ Descriptors createDescriptors(
         bufferInfo.offset = 0;
         bufferInfo.range = descriptors.sets[i].buffer.size;
 
-        VkWriteDescriptorSet writeDescriptorUpdate = {};
-        writeDescriptorUpdate.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        writeDescriptorUpdate.dstSet = descriptors.sets[i].handle;
-        writeDescriptorUpdate.dstBinding = 0;
+        VkWriteDescriptorSet ubWriteDescriptorUpdate = {};
+        ubWriteDescriptorUpdate.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        ubWriteDescriptorUpdate.dstSet = descriptors.sets[i].handle;
+        ubWriteDescriptorUpdate.dstBinding = 0;
         //Remember that descriptors can be arrays, so we also need to specify 
         //the first index in the array that we want to update
-        writeDescriptorUpdate.dstArrayElement = 0;
-        writeDescriptorUpdate.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        ubWriteDescriptorUpdate.dstArrayElement = 0;
+        ubWriteDescriptorUpdate.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         //It’s possible to update multiple descriptors at once in an array, 
         //starting at index dstArrayElement. The descriptorCount field specifies 
         //how many array elements you want to update.
-        writeDescriptorUpdate.descriptorCount = 1;
+        ubWriteDescriptorUpdate.descriptorCount = 1;
         //The pBufferInfo field is used for descriptors that refer to buffer data, 
         //pImageInfo is used for descriptors that refer to image data, and pTexelBufferView 
         //is used for descriptors that refer to buffer views.
-        writeDescriptorUpdate.pBufferInfo = &bufferInfo;
-        writeDescriptorUpdate.pImageInfo = nullptr; // Optional
-        writeDescriptorUpdate.pTexelBufferView = nullptr; // Optional
+        ubWriteDescriptorUpdate.pBufferInfo = &bufferInfo;
+        ubWriteDescriptorUpdate.pImageInfo = nullptr; // Optional
+        ubWriteDescriptorUpdate.pTexelBufferView = nullptr; // Optional
 
-        vkUpdateDescriptorSets(device, 1, &writeDescriptorUpdate, 0, NULL);
+        VkDescriptorImageInfo imageInfo = {};
+        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageInfo.imageView = texture.view;
+        imageInfo.sampler = textureSampler;
+
+        VkWriteDescriptorSet samplerWriteDescriptorUpdate = {};
+        samplerWriteDescriptorUpdate.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        samplerWriteDescriptorUpdate.dstSet = descriptors.sets[i].handle;
+        samplerWriteDescriptorUpdate.dstBinding = 1;
+        samplerWriteDescriptorUpdate.dstArrayElement = 0;
+        samplerWriteDescriptorUpdate.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        samplerWriteDescriptorUpdate.descriptorCount = 1;
+        samplerWriteDescriptorUpdate.pImageInfo = &imageInfo;
+
+        VkWriteDescriptorSet writeDescriptorUpdates[2] = {ubWriteDescriptorUpdate, samplerWriteDescriptorUpdate};
+
+        vkUpdateDescriptorSets(device, 2, writeDescriptorUpdates, 0, NULL);
     }
 
     free(descriptorSets);
@@ -857,14 +893,20 @@ void recreateSwapchain(
 
 VkDescriptorPool createDescriptorPool(VkDevice device, u32 numFramesInFlight)
 {
-    VkDescriptorPoolSize poolSize = {};
-    poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSize.descriptorCount = numFramesInFlight;//Max descriptors
+    VkDescriptorPoolSize ubPoolSize = {};
+    ubPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    ubPoolSize.descriptorCount = numFramesInFlight;//Max descriptors
+
+    VkDescriptorPoolSize samplerPoolSize = {};
+    samplerPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    samplerPoolSize.descriptorCount = numFramesInFlight;
+
+    VkDescriptorPoolSize poolSizes[2] = {ubPoolSize, samplerPoolSize};
 
     VkDescriptorPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    poolInfo.poolSizeCount = 1;
-    poolInfo.pPoolSizes = &poolSize;
+    poolInfo.poolSizeCount = 2;
+    poolInfo.pPoolSizes = poolSizes;
     poolInfo.maxSets = numFramesInFlight;
 
     VkDescriptorPool descriptorPool = NULL;
@@ -941,6 +983,34 @@ Image createTexture(
     return texture;
 }
 
+VkSampler createTextureSampler(VkDevice device, const PhysicalDeviceDetails *physicalDevice)
+{
+    VkSamplerCreateInfo samplerInfo = {};
+    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    samplerInfo.magFilter = VK_FILTER_LINEAR;
+    samplerInfo.minFilter = VK_FILTER_LINEAR;
+    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.maxAnisotropy = physicalDevice->deviceProperties.limits.maxSamplerAnisotropy;
+    samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    samplerInfo.unnormalizedCoordinates = VK_FALSE;
+    samplerInfo.compareEnable = VK_FALSE;
+    samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+    samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    samplerInfo.mipLodBias = 0.0f;
+    samplerInfo.minLod = 0.0f;
+    samplerInfo.maxLod = 0.0f;
+
+    VkSampler sampler = NULL;
+    if (vkCreateSampler(device, &samplerInfo, NULL, &sampler)){
+        fprintf(stderr, "Failed to create texture sampler\n");
+        exit(EXIT_FAILURE);
+    }
+
+    return sampler;
+}
+
 VkState initVkState(const Window *window){
     VkState vk{};
     vk.instance = createInstance("Anemos", VK_MAKE_VERSION(0, 1, 0), "Moebius", VK_MAKE_VERSION(0, 1, 0));
@@ -952,17 +1022,6 @@ VkState initVkState(const Window *window){
     vkGetDeviceQueue(vk.device, queueFamilyIndices.presentQueue, 0, &vk.presentQueue);
     vk.swapchain = createSwapchain(vk.device, vk.physicalDevice.handle, vk.surface, window->handle);
     vk.renderPass = createRenderPass(vk.device, &vk.swapchain);
-    /*
-    The descriptor set layout specifies the types of resources that are going to be accessed 
-    by the pipeline, just like a render pass specifies the types of attachments that will be 
-    accessed. A descriptor set specifies the actual buffer or image resources that will be bound 
-    to the descriptors, just like a framebuffer specifies the actual image views to bind to render 
-    pass attachments. The descriptor set is then bound for the drawing commands just like the vertex 
-    buffers and framebuffer.
-    */
-    vk.descriptorPool = createDescriptorPool(vk.device, MAX_FRAMES_IN_FLIGHT);
-    vk.descriptors = createDescriptors(vk.device, &vk.physicalDevice, vk.descriptorPool, MAX_FRAMES_IN_FLIGHT);
-    vk.graphicsPipeline = createGraphicsPipeline(vk.device, vk.renderPass, &vk.swapchain, vk.descriptors);
     vk.framebuffers = createFramebuffers(vk.device, vk.renderPass, &vk.swapchain);
     vk.vertexBuffer = createBuffer(
         vk.device,
@@ -980,8 +1039,26 @@ VkState initVkState(const Window *window){
     );
     vk.graphicsCommandPool = createCommandPool(vk.device, queueFamilyIndices.graphicsQueue, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
     vk.transferCommandPool = createCommandPool(vk.device, queueFamilyIndices.graphicsQueue, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
-    vk.frameContollers = createFrameStates(vk.device, vk.graphicsCommandPool, MAX_FRAMES_IN_FLIGHT);
+    vk.frameControllers = createFrameStates(vk.device, vk.graphicsCommandPool, MAX_FRAMES_IN_FLIGHT);
     vk.texture = createTexture(vk.device, &vk.physicalDevice, vk.transferCommandPool, vk.graphicsQueue);
+    vk.textureSampler = createTextureSampler(vk.device, &vk.physicalDevice);
+    /*
+    The descriptor set layout specifies the types of resources that are going to be accessed 
+    by the pipeline, just like a render pass specifies the types of attachments that will be 
+    accessed. A descriptor set specifies the actual buffer or image resources that will be bound 
+    to the descriptors, just like a framebuffer specifies the actual image views to bind to render 
+    pass attachments. The descriptor set is then bound for the drawing commands just like the vertex 
+    buffers and framebuffer.
+    */
+    vk.descriptorPool = createDescriptorPool(vk.device, MAX_FRAMES_IN_FLIGHT);
+    vk.descriptors = createDescriptors(
+        vk.device, 
+        &vk.physicalDevice, 
+        vk.descriptorPool, 
+        vk.textureSampler, 
+        vk.texture, 
+        MAX_FRAMES_IN_FLIGHT);
+    vk.graphicsPipeline = createGraphicsPipeline(vk.device, vk.renderPass, &vk.swapchain, vk.descriptors);
 
     return vk;
 }

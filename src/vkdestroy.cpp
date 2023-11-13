@@ -17,11 +17,11 @@ void destroyFramebuffers(VkDevice device, Framebuffers *framebuffers){
 
 void destroyVkState(VkState *vk){
     for(size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
-        vkDestroySemaphore(vk->device, vk->frameContollers[i].synchronisers.imageAvailable, NULL);
-        vkDestroySemaphore(vk->device, vk->frameContollers[i].synchronisers.renderFinished, NULL);
-        vkDestroyFence(vk->device, vk->frameContollers[i].synchronisers.inFlight, NULL);
+        vkDestroySemaphore(vk->device, vk->frameControllers[i].synchronisers.imageAvailable, NULL);
+        vkDestroySemaphore(vk->device, vk->frameControllers[i].synchronisers.renderFinished, NULL);
+        vkDestroyFence(vk->device, vk->frameControllers[i].synchronisers.inFlight, NULL);
     }
-    free(vk->frameContollers);
+    free(vk->frameControllers);
 
     vkDestroyCommandPool(vk->device, vk->graphicsCommandPool, NULL);
     vkDestroyCommandPool(vk->device, vk->transferCommandPool, NULL);
@@ -45,6 +45,8 @@ void destroyVkState(VkState *vk){
     vkDestroyDescriptorPool(vk->device, vk->descriptorPool, NULL);
     vkDestroyDescriptorSetLayout(vk->device, vk->descriptors.layout, NULL);
 
+    vkDestroySampler(vk->device, vk->textureSampler, NULL);
+    vkDestroyImageView(vk->device, vk->texture.view, NULL);
     vkDestroyImage(vk->device, vk->texture.handle, NULL);
     vkFreeMemory(vk->device, vk->texture.memory, NULL);
 

@@ -17,6 +17,8 @@ Descriptors createDescriptors(
     VkDevice device,
     const PhysicalDeviceDetails *physicalDevice,
     VkDescriptorPool descriptorPool,
+    VkSampler textureSampler,
+    Image texture,
     size_t numFramesInFlight);
 PipelineDetails createGraphicsPipeline(
     VkDevice device, 
@@ -41,4 +43,5 @@ Image createTexture(
     const PhysicalDeviceDetails *physicalDeviceDetails,
     VkCommandPool transientCommandPool,
     VkQueue transferQueue);
+VkSampler createTextureSampler(VkDevice device, const PhysicalDeviceDetails *physicalDevice);
 VkState initVkState(const Window *window);
