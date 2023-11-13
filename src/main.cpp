@@ -58,12 +58,13 @@ int main(int, char**){
         if (result == VK_ERROR_OUT_OF_DATE_KHR){
             recreateSwapchain(
                 vk.device, 
-                vk.physicalDevice.handle, 
+                &vk.physicalDevice, 
                 vk.surface, 
                 vk.renderPass, 
                 window.handle,
                 &vk.swapchain,
-                &vk.framebuffers
+                &vk.framebuffers,
+                &vk.depthBuffer
             );
             continue;
         }
@@ -111,12 +112,13 @@ int main(int, char**){
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || window.resized){
             recreateSwapchain(
                 vk.device,
-                vk.physicalDevice.handle,
+                &vk.physicalDevice,
                 vk.surface,
                 vk.renderPass,
                 window.handle,
                 &vk.swapchain,
-                &vk.framebuffers
+                &vk.framebuffers,
+                &vk.depthBuffer
             );
 
             window.resized = false;

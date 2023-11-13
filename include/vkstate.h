@@ -86,9 +86,8 @@ typedef struct Image{
     VkImage handle;
     VkDeviceMemory memory;
     VkImageView view;
-    u32 width;
-    u32 height;
-    u32 channels;
+    VkExtent2D extent;
+    VkFormat format;
 } Image;
 
 typedef struct VkState{
@@ -111,4 +110,5 @@ typedef struct VkState{
     FrameControllers *frameControllers;//free
     Image texture;
     VkSampler textureSampler;
+    Image depthBuffer;
 } VkState;

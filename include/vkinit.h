@@ -11,7 +11,10 @@ VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice, QueueFamilyIndices
 VkSurfaceKHR createSurface(VkInstance instance, GLFWwindow *window);
 SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice device, VkSurfaceKHR surface);
 SwapchainDetails createSwapchain(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, GLFWwindow *window);
-VkRenderPass createRenderPass(VkDevice device, const SwapchainDetails *swapchainDetails);
+VkRenderPass createRenderPass(
+    VkDevice device, 
+    const SwapchainDetails *swapchainDetails,
+    VkFormat depthBufferFormat);
 VkDescriptorPool createDescriptorPool(VkDevice device, u32 numFramesInFlight);
 Descriptors createDescriptors(
     VkDevice device,
@@ -25,23 +28,29 @@ PipelineDetails createGraphicsPipeline(
     VkRenderPass renderPass, 
     const SwapchainDetails *swapchainDetails,
     Descriptors descriptors);
-Framebuffers createFramebuffers(VkDevice device, VkRenderPass renderPass, const SwapchainDetails *swapchainDetails);
 VkCommandPool createCommandPool(VkDevice device, uint32_t queueIndex, VkCommandPoolCreateFlags createFlags);
 VkCommandBuffer createCommandBuffer(VkDevice device, VkCommandPool commandPool);
 Synchronisers createSynchronisers(VkDevice device);
 FrameControllers* createFrameStates(VkDevice device, VkCommandPool commandPool, size_t numFrames);
+Framebuffers createFramebuffers(
+    VkDevice device, 
+    VkRenderPass renderPass, 
+    const SwapchainDetails *swapchainDetails,
+    Image depthBuffer);
 void recreateSwapchain(
     VkDevice device,
-    VkPhysicalDevice physicalDevice,
+    const PhysicalDeviceDetails *physicalDevice,
     VkSurfaceKHR surface,
     VkRenderPass renderPass,
     GLFWwindow *window,
     SwapchainDetails *swapchainDetails,
-    Framebuffers *framebuffers);
+    Framebuffers *framebuffers,
+    Image *depthBuffer);
 Image createTexture(
     VkDevice device, 
     const PhysicalDeviceDetails *physicalDeviceDetails,
     VkCommandPool transientCommandPool,
     VkQueue transferQueue);
 VkSampler createTextureSampler(VkDevice device, const PhysicalDeviceDetails *physicalDevice);
+Image createDepthBuffer(VkDevice device, const PhysicalDeviceDetails *physicalDevice, VkExtent2D swapchainExtent);
 VkState initVkState(const Window *window);

@@ -15,6 +15,12 @@ void destroyFramebuffers(VkDevice device, Framebuffers *framebuffers){
     free(framebuffers->handles);
 }
 
+void destroyImage(VkDevice device, Image *image){
+    vkDestroyImageView(device, image->view, NULL);
+    vkDestroyImage(device, image->handle, NULL);
+    vkFreeMemory(device, image->memory, NULL);
+}
+
 void destroyVkState(VkState *vk){
     for(size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
         vkDestroySemaphore(vk->device, vk->frameControllers[i].synchronisers.imageAvailable, NULL);
@@ -44,6 +50,8 @@ void destroyVkState(VkState *vk){
 
     vkDestroyDescriptorPool(vk->device, vk->descriptorPool, NULL);
     vkDestroyDescriptorSetLayout(vk->device, vk->descriptors.layout, NULL);
+
+    destroyImage(vk->device, &vk->depthBuffer);
 
     vkDestroySampler(vk->device, vk->textureSampler, NULL);
     vkDestroyImageView(vk->device, vk->texture.view, NULL);

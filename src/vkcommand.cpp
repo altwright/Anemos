@@ -33,13 +33,17 @@ void recordDrawCommand(
     renderPassBeginInfo.renderPass = renderPass;
     renderPassBeginInfo.framebuffer = framebuffer;
     renderPassBeginInfo.renderArea.offset = {0, 0};
-    renderPassBeginInfo.renderArea.extent = swapchainDetails->extent;
     //The render area defines where shader loads and stores will take place. 
     //The pixels outside this region will have undefined values. It should 
     //match the size of the attachments for best performance.
-    VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
-    renderPassBeginInfo.clearValueCount = 1;
-    renderPassBeginInfo.pClearValues = &clearColor;
+    renderPassBeginInfo.renderArea.extent = swapchainDetails->extent;
+    //Note that the order of clearValues should be identical to the order of your attachments.
+    u32 attachmentCount = 2;
+    VkClearValue clearValues[attachmentCount] = {};
+    clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+    clearValues[1].depthStencil = {1.0f, 0};
+    renderPassBeginInfo.clearValueCount = attachmentCount;
+    renderPassBeginInfo.pClearValues = clearValues;
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 

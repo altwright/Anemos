@@ -5,10 +5,9 @@
 Image createImage(
     VkDevice device, 
     const VkPhysicalDeviceMemoryProperties *memProperties,
-    u32 width,
-    u32 height,
-    u32 channels,
+    VkExtent2D extent,
     VkFormat format, 
     VkImageTiling tiling,
     VkImageUsageFlags usage,
-    VkMemoryPropertyFlags desiredMemProperties);
+    VkMemoryPropertyFlags desiredMemProperties,
+    VkImageAspectFlags imageAspectFlags);
