@@ -11,9 +11,8 @@
 #include "vertex.h"
 #include "vkmemory.h"
 #include "vkdescriptor.h"
-
-#define WIDTH 640
-#define HEIGHT 480
+#include "config.h"
+#include "model.h"
 
 int main(int, char**){
     Window window = {};
@@ -22,7 +21,11 @@ int main(int, char**){
         return EXIT_FAILURE;
     }
 
-    VkState vk = initVkState(&window);
+    Model model = loadModel("./models/viking_room.obj");
+    printf("Num Vertices: %ld\n", model.verticesCount);
+    printf("Num Indices: %ld\n", model.indicesCount);
+
+    VkState vk = initVkState(&window, model.verticesCount, model.indicesCount);
 
     copyDataToLocalBuffer(
         vk.device,
@@ -31,9 +34,9 @@ int main(int, char**){
         vk.graphicsQueue,
         vk.vertexBuffer,
         0,
-        vertices,
-        VERTEX_COUNT,
-        sizeof(vertices[0])
+        model.vertices,
+        model.verticesCount,
+        sizeof(Vertex)
     );
 
     copyDataToLocalBuffer(
@@ -43,9 +46,9 @@ int main(int, char**){
         vk.graphicsQueue,
         vk.indexBuffer,
         0,
-        indices,
-        INDEX_COUNT,
-        sizeof(indices[0])
+        model.indices,
+        model.indicesCount,
+        sizeof(u32)
     );
 
     uint32_t currentFrame = 0;
@@ -88,10 +91,10 @@ int main(int, char**){
             vk.descriptors.sets[currentFrame].handle,
             vk.vertexBuffer,
             0,
-            VERTEX_COUNT,
+            model.verticesCount,
             vk.indexBuffer,
             0,
-            INDEX_COUNT
+            model.indicesCount
         );
 
         submitDrawCommand(

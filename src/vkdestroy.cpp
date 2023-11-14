@@ -1,5 +1,6 @@
 #include "vkdestroy.h"
 #include <stdlib.h>
+#include "config.h"
 
 void destroySwapchainDetails(VkDevice device, SwapchainDetails *swapchainDetails){
     for (size_t i = 0; i < swapchainDetails->imagesCount; i++)

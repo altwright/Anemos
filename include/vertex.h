@@ -1,6 +1,6 @@
 #pragma once
-#include <cglm/cglm.h>
 #include <vulkan/vulkan.h>
+#include <cglm/cglm.h>
 #include "int.h"
 #include "vkstate.h"
 
@@ -15,11 +15,6 @@ typedef struct Vertex{
 typedef struct VertexInputAttributes{
     VkVertexInputAttributeDescription descriptions[VERTEX_ATTRIBUTE_COUNT];
 } VertexInputAttributes;
-
-#define VERTEX_COUNT 8
-extern const Vertex vertices[VERTEX_COUNT];
-#define INDEX_COUNT 12
-extern const u16 indices[INDEX_COUNT];
 
 VkVertexInputBindingDescription getVertexBindingDescription();
 VertexInputAttributes getVertexInputAttributes();

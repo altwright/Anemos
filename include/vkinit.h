@@ -53,4 +53,4 @@ Image createTexture(
     VkQueue transferQueue);
 VkSampler createTextureSampler(VkDevice device, const PhysicalDeviceDetails *physicalDevice);
 Image createDepthBuffer(VkDevice device, const PhysicalDeviceDetails *physicalDevice, VkExtent2D swapchainExtent);
-VkState initVkState(const Window *window);
+VkState initVkState(const Window *window, size_t verticesCount, size_t indicesCount);

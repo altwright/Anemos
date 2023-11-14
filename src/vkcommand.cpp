@@ -51,7 +51,7 @@ void recordDrawCommand(
 
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer.handle, &vertexBufferOffset);
 
-    vkCmdBindIndexBuffer(commandBuffer, indexBuffer.handle, indexBufferOffset, VK_INDEX_TYPE_UINT16);
+    vkCmdBindIndexBuffer(commandBuffer, indexBuffer.handle, indexBufferOffset, VK_INDEX_TYPE_UINT32);
 
     VkViewport viewport{};
     viewport.x = 0.0f;

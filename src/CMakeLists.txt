@@ -11,4 +11,6 @@ target_sources(anemos PRIVATE
     vkdescriptor.cpp
     timing.cpp
     vkimage.cpp
+    config.cpp
+    model.cpp
 )

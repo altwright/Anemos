@@ -1,9 +1,1 @@
 #include "vkstate.h"
-
-const char* VALIDATION_LAYERS[VALIDATION_LAYERS_COUNT] = {
-    "VK_LAYER_KHRONOS_validation"
-};
-
-const char* DEVICE_EXTENSIONS[DEVICE_EXTENSIONS_COUNT] = {
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME
-};

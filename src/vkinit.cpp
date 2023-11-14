@@ -15,6 +15,7 @@
 #include "vkdescriptor.h"
 #include "stb_image.h"
 #include "vkimage.h"
+#include "config.h"
 
 VkInstance createInstance(const char *appName, uint32_t appVersion, const char *engineName, uint32_t engineVersion){
     VkApplicationInfo appInfo{
@@ -37,7 +38,7 @@ VkInstance createInstance(const char *appName, uint32_t appVersion, const char *
     vkEnumerateInstanceExtensionProperties(NULL, &supportedExtCount, NULL);
     VkExtensionProperties *extProperties = (VkExtensionProperties*)malloc(sizeof(VkExtensionProperties)*supportedExtCount);
     vkEnumerateInstanceExtensionProperties(NULL, &supportedExtCount, extProperties);
-    #ifdef NDEBUG
+    #ifndef NDEBUG
     #else
     printf("Supported Instance Extensions:\n");
     for(size_t i = 0; i < supportedExtCount; i++){
@@ -177,8 +178,7 @@ PhysicalDeviceDetails selectPhysicalDevice(VkInstance instance, VkSurfaceKHR sur
     VkPhysicalDevice *physicalDevices = (VkPhysicalDevice*)malloc(sizeof(VkPhysicalDevice)*deviceCount);
     vkEnumeratePhysicalDevices(instance, &deviceCount, physicalDevices);
 
-    #ifdef NDEBUG
-    #else
+    #ifndef NDEBUG
     printf("Vulkan-capable GPUs:\n");
     for (size_t i = 0; i < deviceCount; i++){
         VkPhysicalDeviceProperties deviceProperties;
@@ -265,8 +265,7 @@ VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice, QueueFamilyIndices
     uint32_t queueCreateInfoCount = 1;
     if (indices.graphicsQueue != indices.presentQueue){
         queueCreateInfoCount = 2;
-        #ifdef NDEBUG
-        #else
+        #ifndef NDEBUG
         printf("Graphics and Present Queue Families are different\n");
         #endif
     }
@@ -691,13 +690,8 @@ PipelineDetails createGraphicsPipeline(
     const SwapchainDetails *swapchainDetails,
     Descriptors descriptors)
 {
-    #ifdef NDEBUG
-    FileContents vertShader = readFileContents("shaders/vert.spv");
-    FileContents fragShader = readFileContents("shaders/frag.spv");
-    #else
-    FileContents vertShader = readFileContents("../shaders/vert.spv");
-    FileContents fragShader = readFileContents("../shaders/frag.spv");
-    #endif
+    FileContents vertShader = readFileContents("./shaders/vert.spv");
+    FileContents fragShader = readFileContents("./shaders/frag.spv");
 
     if (!vertShader.bytes){
         printf("Failed to find the Vertex Shader binary\n");
@@ -1017,8 +1011,12 @@ Image createTexture(
 {
     int width, height, fileChannels = 0;
 
+    char texturePath[64] = {};
+    strcat(texturePath, TEXTURES_DIR);
+    strcat(texturePath, "viking_room.png");
+
     stbi_uc *texels = stbi_load(
-        "../textures/texture.jpg", 
+        texturePath,
         &width, 
         &height, 
         &fileChannels,
@@ -1126,7 +1124,7 @@ Image createDepthBuffer(VkDevice device, const PhysicalDeviceDetails *physicalDe
         VK_IMAGE_ASPECT_DEPTH_BIT);
 }
 
-VkState initVkState(const Window *window){
+VkState initVkState(const Window *window, size_t verticesCount, size_t indicesCount){
     VkState vk{};
     vk.instance = createInstance("Anemos", VK_MAKE_VERSION(0, 1, 0), "Moebius", VK_MAKE_VERSION(0, 1, 0));
     vk.surface = createSurface(vk.instance, window->handle);
@@ -1139,13 +1137,13 @@ VkState initVkState(const Window *window){
     vk.vertexBuffer = createBuffer(
         vk.device,
         &vk.physicalDevice,
-        sizeof(Vertex)*VERTEX_COUNT,
+        sizeof(Vertex)*verticesCount,
         VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     vk.indexBuffer = createBuffer(
         vk.device,
         &vk.physicalDevice, 
-        sizeof(indices[0])*INDEX_COUNT,
+        sizeof(u32)*indicesCount,
         VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     vk.graphicsCommandPool = createCommandPool(vk.device, queueFamilyIndices.graphicsQueue, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
