@@ -60,6 +60,7 @@ typedef struct PhysicalDeviceDetails{
     VkPhysicalDevice handle;
     VkPhysicalDeviceMemoryProperties memProperties;
     VkPhysicalDeviceProperties deviceProperties;
+    VkSampleCountFlagBits maxSamples;
 } PhysicalDeviceDetails;
 
 typedef struct DescriptorSet{
@@ -103,4 +104,5 @@ typedef struct VkState{
     Image texture;
     VkSampler textureSampler;
     Image depthBuffer;
+    Image sampleImage;
 } VkState;

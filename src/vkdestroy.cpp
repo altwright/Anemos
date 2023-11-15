@@ -52,6 +52,7 @@ void destroyVkState(VkState *vk){
     vkDestroyDescriptorPool(vk->device, vk->descriptorPool, NULL);
     vkDestroyDescriptorSetLayout(vk->device, vk->descriptors.layout, NULL);
 
+    destroyImage(vk->device, &vk->sampleImage);
     destroyImage(vk->device, &vk->depthBuffer);
 
     vkDestroySampler(vk->device, vk->textureSampler, NULL);

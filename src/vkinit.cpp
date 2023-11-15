@@ -210,18 +210,37 @@ PhysicalDeviceDetails selectPhysicalDevice(VkInstance instance, VkSurfaceKHR sur
 
     free(physicalDevices);
 
+    if (!selectedDevice){
+        printf("No GPU is suitable\n");
+        exit(EXIT_FAILURE);
+    }
+
     PhysicalDeviceDetails physicalDeviceDetails = {};
     physicalDeviceDetails.handle = selectedDevice;
     vkGetPhysicalDeviceMemoryProperties(physicalDeviceDetails.handle, &physicalDeviceDetails.memProperties);
     vkGetPhysicalDeviceProperties(physicalDeviceDetails.handle, &physicalDeviceDetails.deviceProperties);
 
-    #ifdef NDEBUG
-    #else
+    #ifndef NDEBUG
     printf("Selected GPU: %s\n", &physicalDeviceDetails.deviceProperties.deviceName);
     #endif
 
-    if (!selectedDevice){
-        printf("No GPU is suitable\n");
+    VkSampleCountFlags maxSamples = physicalDeviceDetails.deviceProperties.limits.framebufferColorSampleCounts &
+        physicalDeviceDetails.deviceProperties.limits.framebufferDepthSampleCounts;
+
+    if (maxSamples & VK_SAMPLE_COUNT_64_BIT){
+        physicalDeviceDetails.maxSamples = VK_SAMPLE_COUNT_64_BIT;
+    }
+    else if (maxSamples & VK_SAMPLE_COUNT_32_BIT){
+        physicalDeviceDetails.maxSamples = VK_SAMPLE_COUNT_32_BIT;
+    }
+    else if (maxSamples & VK_SAMPLE_COUNT_16_BIT){
+        physicalDeviceDetails.maxSamples = VK_SAMPLE_COUNT_16_BIT;
+    }
+    else if (maxSamples & VK_SAMPLE_COUNT_8_BIT){
+        physicalDeviceDetails.maxSamples = VK_SAMPLE_COUNT_8_BIT;
+    }
+    else {
+        fprintf(stderr, "Failed to find a suitable Max Sample Count\n");
         exit(EXIT_FAILURE);
     }
 
@@ -469,21 +488,22 @@ VkShaderModule createShaderModule(VkDevice device, uint32_t *code, size_t numByt
 VkRenderPass createRenderPass(
     VkDevice device, 
     const SwapchainDetails *swapchainDetails,
+    const PhysicalDeviceDetails *physicalDevice,
     VkFormat depthBufferFormat)
 {
     VkAttachmentDescription colourAttachmentDesc{};
     colourAttachmentDesc.format = swapchainDetails->format;
-    colourAttachmentDesc.samples = VK_SAMPLE_COUNT_1_BIT;
+    colourAttachmentDesc.samples = physicalDevice->maxSamples;
     colourAttachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     colourAttachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     colourAttachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     colourAttachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     colourAttachmentDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    colourAttachmentDesc.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    colourAttachmentDesc.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     VkAttachmentDescription depthAttachmentDesc = {};
     depthAttachmentDesc.format = depthBufferFormat;
-    depthAttachmentDesc.samples = VK_SAMPLE_COUNT_1_BIT;
+    depthAttachmentDesc.samples = physicalDevice->maxSamples;
     depthAttachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     depthAttachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     depthAttachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -491,6 +511,16 @@ VkRenderPass createRenderPass(
     depthAttachmentDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     depthAttachmentDesc.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
     
+    VkAttachmentDescription resolveAttachmentDesc = {};
+    resolveAttachmentDesc.format = swapchainDetails->format;
+    resolveAttachmentDesc.samples = VK_SAMPLE_COUNT_1_BIT;
+    resolveAttachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    resolveAttachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    resolveAttachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    resolveAttachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    resolveAttachmentDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    resolveAttachmentDesc.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
     VkAttachmentReference colourAttachmentRef{};
     colourAttachmentRef.attachment = 0;//References the first attachment description by index
     colourAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -500,12 +530,17 @@ VkRenderPass createRenderPass(
     depthAttachmentRef.attachment = 1;
     depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
 
+    VkAttachmentReference resolveAttachmentRef = {};
+    resolveAttachmentRef.attachment = 2;
+    resolveAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
     //Subpasses are subsequent rendering operations that depend on the contents of 
     //framebuffers in previous passes
     VkSubpassDescription subpassDesc{};
     subpassDesc.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     subpassDesc.colorAttachmentCount = 1;
     subpassDesc.pColorAttachments = &colourAttachmentRef;
+    subpassDesc.pResolveAttachments = &resolveAttachmentRef;
     //The index of the attachment in this array is directly 
     //referenced from the fragment shader with the 
     //layout(location = 0) out vec4 outColor directive!
@@ -515,7 +550,7 @@ VkRenderPass createRenderPass(
     dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
     dependency.dstSubpass = 0;//Index to the only subpass. Must be higher than srcSubpass
     dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-    dependency.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    dependency.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
     //The above two fields specify the operations to wait on and the stages in which 
     //these operations occur. We need to wait for the swap chain to finish reading 
     //from the image before we can access it. This can be accomplished by waiting on 
@@ -527,8 +562,8 @@ VkRenderPass createRenderPass(
     //the transition from happening until it’s actually necessary (and allowed): 
     //when we want to start writing colors to it.
     
-    u32 attachmentDescriptionsCount = 2;
-    VkAttachmentDescription attachmentDescriptions[attachmentDescriptionsCount] = {colourAttachmentDesc, depthAttachmentDesc};
+    u32 attachmentDescriptionsCount = 3;
+    VkAttachmentDescription attachmentDescriptions[attachmentDescriptionsCount] = {colourAttachmentDesc, depthAttachmentDesc, resolveAttachmentDesc};
 
     VkRenderPassCreateInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -688,7 +723,8 @@ PipelineDetails createGraphicsPipeline(
     VkDevice device, 
     VkRenderPass renderPass, 
     const SwapchainDetails *swapchainDetails,
-    Descriptors descriptors)
+    Descriptors descriptors,
+    VkSampleCountFlagBits sampleCount)
 {
     FileContents vertShader = readFileContents("./shaders/vert.spv");
     FileContents fragShader = readFileContents("./shaders/frag.spv");
@@ -757,7 +793,7 @@ PipelineDetails createGraphicsPipeline(
     VkPipelineMultisampleStateCreateInfo multisamplingInfo{};
     multisamplingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisamplingInfo.sampleShadingEnable = VK_FALSE;
-    multisamplingInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    multisamplingInfo.rasterizationSamples = sampleCount;
     multisamplingInfo.minSampleShading = 1.0f; // Optional
     multisamplingInfo.pSampleMask = nullptr; // Optional
     multisamplingInfo.alphaToCoverageEnable = VK_FALSE; // Optional
@@ -847,7 +883,8 @@ Framebuffers createFramebuffers(
     VkDevice device, 
     VkRenderPass renderPass, 
     const SwapchainDetails *swapchainDetails,
-    Image depthBuffer)
+    Image depthBuffer,
+    Image sampleImage)
 {
     Framebuffers framebuffers{};
     framebuffers.count = swapchainDetails->imagesCount;
@@ -857,8 +894,8 @@ Framebuffers createFramebuffers(
         //The color attachment differs for every swap chain image, but the same depth image 
         //can be used by all of them because only a single subpass is running at the same 
         //time due to our semaphores.
-        u32 attachmentsCount = 2;
-        VkImageView attachments[attachmentsCount] = {swapchainDetails->imageViews[i], depthBuffer.view};
+        u32 attachmentsCount = 3;
+        VkImageView attachments[attachmentsCount] = {sampleImage.view, depthBuffer.view, swapchainDetails->imageViews[i]};
 
         VkFramebufferCreateInfo framebufferInfo{};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -955,7 +992,8 @@ void recreateSwapchain(
     GLFWwindow *window,
     SwapchainDetails *swapchainDetails,
     Framebuffers *framebuffers,
-    Image *depthBuffer)
+    Image *depthBuffer,
+    Image *sampleImage)
 {
     int width = 0, height = 0;
     glfwGetFramebufferSize(window, &width, &height);
@@ -969,11 +1007,14 @@ void recreateSwapchain(
     destroySwapchainDetails(device, swapchainDetails);
     *swapchainDetails = createSwapchain(device, physicalDevice->handle, surface, window);
 
+    destroyImage(device, sampleImage);
+    *sampleImage = createSampleImage(device, physicalDevice, *swapchainDetails);
+
     destroyImage(device, depthBuffer);
-    *depthBuffer = createDepthBuffer(device, physicalDevice, swapchainDetails->extent);
+    *depthBuffer = createDepthBuffer(device, physicalDevice, swapchainDetails->extent, physicalDevice->maxSamples);
 
     destroyFramebuffers(device, framebuffers);
-    *framebuffers = createFramebuffers(device, renderPass, swapchainDetails, *depthBuffer);
+    *framebuffers = createFramebuffers(device, renderPass, swapchainDetails, *depthBuffer, *sampleImage);
 }
 
 VkDescriptorPool createDescriptorPool(VkDevice device, u32 numFramesInFlight)
@@ -1036,7 +1077,8 @@ Image createTexture(
         VK_IMAGE_TILING_OPTIMAL,
         VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-        VK_IMAGE_ASPECT_COLOR_BIT);
+        VK_IMAGE_ASPECT_COLOR_BIT,
+        VK_SAMPLE_COUNT_1_BIT);
 
     transitionImageLayout(
         device,
@@ -1099,7 +1141,11 @@ VkSampler createTextureSampler(VkDevice device, const PhysicalDeviceDetails *phy
     return sampler;
 }
 
-Image createDepthBuffer(VkDevice device, const PhysicalDeviceDetails *physicalDevice, VkExtent2D swapchainExtent)
+Image createDepthBuffer(
+    VkDevice device, 
+    const PhysicalDeviceDetails *physicalDevice, 
+    VkExtent2D swapchainExtent,
+    VkSampleCountFlagBits sampleCount)
 {
     size_t candidateFormatsCount = 3;
     VkFormat candidateFormats[candidateFormatsCount] = {
@@ -1121,7 +1167,22 @@ Image createDepthBuffer(VkDevice device, const PhysicalDeviceDetails *physicalDe
         VK_IMAGE_TILING_OPTIMAL,
         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-        VK_IMAGE_ASPECT_DEPTH_BIT);
+        VK_IMAGE_ASPECT_DEPTH_BIT,
+        sampleCount);
+}
+
+Image createSampleImage(VkDevice device, const PhysicalDeviceDetails *physicalDevice, SwapchainDetails swapchain)
+{
+    return createImage(
+        device,
+        &physicalDevice->memProperties,
+        swapchain.extent,
+        swapchain.format,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        VK_IMAGE_ASPECT_COLOR_BIT,
+        physicalDevice->maxSamples);
 }
 
 VkState initVkState(const Window *window, size_t verticesCount, size_t indicesCount){
@@ -1151,9 +1212,10 @@ VkState initVkState(const Window *window, size_t verticesCount, size_t indicesCo
     vk.frameControllers = createFrameStates(vk.device, vk.graphicsCommandPool, MAX_FRAMES_IN_FLIGHT);
     vk.texture = createTexture(vk.device, &vk.physicalDevice, vk.transferCommandPool, vk.graphicsQueue);
     vk.textureSampler = createTextureSampler(vk.device, &vk.physicalDevice);
-    vk.depthBuffer = createDepthBuffer(vk.device, &vk.physicalDevice, vk.swapchain.extent);
-    vk.renderPass = createRenderPass(vk.device, &vk.swapchain, vk.depthBuffer.format);
-    vk.framebuffers = createFramebuffers(vk.device, vk.renderPass, &vk.swapchain, vk.depthBuffer);
+    vk.sampleImage = createSampleImage(vk.device, &vk.physicalDevice, vk.swapchain);
+    vk.depthBuffer = createDepthBuffer(vk.device, &vk.physicalDevice, vk.swapchain.extent, vk.physicalDevice.maxSamples);
+    vk.renderPass = createRenderPass(vk.device, &vk.swapchain, &vk.physicalDevice, vk.depthBuffer.format);
+    vk.framebuffers = createFramebuffers(vk.device, vk.renderPass, &vk.swapchain, vk.depthBuffer, vk.sampleImage);
     /*
     The descriptor set layout specifies the types of resources that are going to be accessed 
     by the pipeline, just like a render pass specifies the types of attachments that will be 
@@ -1170,7 +1232,7 @@ VkState initVkState(const Window *window, size_t verticesCount, size_t indicesCo
         vk.textureSampler, 
         vk.texture, 
         MAX_FRAMES_IN_FLIGHT);
-    vk.graphicsPipeline = createGraphicsPipeline(vk.device, vk.renderPass, &vk.swapchain, vk.descriptors);
+    vk.graphicsPipeline = createGraphicsPipeline(vk.device, vk.renderPass, &vk.swapchain, vk.descriptors, vk.physicalDevice.maxSamples);
 
     return vk;
 }

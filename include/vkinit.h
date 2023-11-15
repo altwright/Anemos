@@ -14,6 +14,7 @@ SwapchainDetails createSwapchain(VkDevice device, VkPhysicalDevice physicalDevic
 VkRenderPass createRenderPass(
     VkDevice device, 
     const SwapchainDetails *swapchainDetails,
+    const PhysicalDeviceDetails *physicalDevice,
     VkFormat depthBufferFormat);
 VkDescriptorPool createDescriptorPool(VkDevice device, u32 numFramesInFlight);
 Descriptors createDescriptors(
@@ -27,7 +28,8 @@ PipelineDetails createGraphicsPipeline(
     VkDevice device, 
     VkRenderPass renderPass, 
     const SwapchainDetails *swapchainDetails,
-    Descriptors descriptors);
+    Descriptors descriptors,
+    VkSampleCountFlagBits sampleCount);
 VkCommandPool createCommandPool(VkDevice device, uint32_t queueIndex, VkCommandPoolCreateFlags createFlags);
 VkCommandBuffer createCommandBuffer(VkDevice device, VkCommandPool commandPool);
 Synchronisers createSynchronisers(VkDevice device);
@@ -36,7 +38,8 @@ Framebuffers createFramebuffers(
     VkDevice device, 
     VkRenderPass renderPass, 
     const SwapchainDetails *swapchainDetails,
-    Image depthBuffer);
+    Image depthBuffer,
+    Image sampleImage);
 void recreateSwapchain(
     VkDevice device,
     const PhysicalDeviceDetails *physicalDevice,
@@ -45,12 +48,18 @@ void recreateSwapchain(
     GLFWwindow *window,
     SwapchainDetails *swapchainDetails,
     Framebuffers *framebuffers,
-    Image *depthBuffer);
+    Image *depthBuffer,
+    Image *sampleImage);
 Image createTexture(
     VkDevice device, 
     const PhysicalDeviceDetails *physicalDeviceDetails,
     VkCommandPool transientCommandPool,
     VkQueue transferQueue);
 VkSampler createTextureSampler(VkDevice device, const PhysicalDeviceDetails *physicalDevice);
-Image createDepthBuffer(VkDevice device, const PhysicalDeviceDetails *physicalDevice, VkExtent2D swapchainExtent);
+Image createDepthBuffer(
+    VkDevice device, 
+    const PhysicalDeviceDetails *physicalDevice, 
+    VkExtent2D swapchainExtent,
+    VkSampleCountFlagBits sampleCount);
+Image createSampleImage(VkDevice device, const PhysicalDeviceDetails *physicalDevice, SwapchainDetails swapchain);
 VkState initVkState(const Window *window, size_t verticesCount, size_t indicesCount);

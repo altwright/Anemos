@@ -14,7 +14,8 @@ Image createImage(
     VkImageTiling tiling,
     VkImageUsageFlags usage,
     VkMemoryPropertyFlags desiredMemProperties,
-    VkImageAspectFlags imageAspectFlags)
+    VkImageAspectFlags imageAspectFlags,
+    VkSampleCountFlagBits sampleCount)
 {
     VkImageCreateInfo imageInfo = {};
     imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -29,7 +30,7 @@ Image createImage(
     imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     imageInfo.usage = usage;
     imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    imageInfo.samples = sampleCount;
 
     Image image = {};
     image.extent = extent;

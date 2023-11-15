@@ -10,4 +10,5 @@ Image createImage(
     VkImageTiling tiling,
     VkImageUsageFlags usage,
     VkMemoryPropertyFlags desiredMemProperties,
-    VkImageAspectFlags imageAspectFlags);
+    VkImageAspectFlags imageAspectFlags,
+    VkSampleCountFlagBits sampleCount);

@@ -67,7 +67,8 @@ int main(int, char**){
                 window.handle,
                 &vk.swapchain,
                 &vk.framebuffers,
-                &vk.depthBuffer
+                &vk.depthBuffer,
+                &vk.sampleImage
             );
             continue;
         }
@@ -121,7 +122,8 @@ int main(int, char**){
                 window.handle,
                 &vk.swapchain,
                 &vk.framebuffers,
-                &vk.depthBuffer
+                &vk.depthBuffer,
+                &vk.sampleImage
             );
 
             window.resized = false;
