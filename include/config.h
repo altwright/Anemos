@@ -1,13 +1,6 @@
 #pragma once
 #include "int.h"
 
-#define WIDTH 800
-#define HEIGHT 600
-
-extern const char* TEXTURES_DIR;
-extern const char* MODELS_DIR;
-extern const char* SHADERS_DIR;
-
 #define VALIDATION_LAYERS_COUNT 1
 extern const char* VALIDATION_LAYERS[VALIDATION_LAYERS_COUNT];
 
@@ -15,3 +8,18 @@ extern const char* VALIDATION_LAYERS[VALIDATION_LAYERS_COUNT];
 extern const char* DEVICE_EXTENSIONS[DEVICE_EXTENSIONS_COUNT];
 
 #define MAX_FRAMES_IN_FLIGHT 2
+#define TEXTURES_DIR  "./textures/"
+#define MODELS_DIR "./models/"
+#define SHADERS_DIR "./shaders/"
+#define CONFIG_FILE "./config.toml"
+#define TITLE "ANEMOS"
+#define VERSION VK_MAKE_VERSION(0, 1, 0)
+
+typedef struct{
+    struct {
+        u32 width;
+        u32 height;
+    } window;
+} UserConfig;
+
+bool loadUserConfig(const char* configFilePath, UserConfig *userConfig);

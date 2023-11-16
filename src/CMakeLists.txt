@@ -1,9 +1,7 @@
 target_sources(anemos PRIVATE
     main.cpp
     window.cpp
-    vkinit.cpp
     vkstate.cpp
-    vkdestroy.cpp
     load.cpp
     vkcommand.cpp
     vertex.cpp
@@ -13,4 +11,8 @@ target_sources(anemos PRIVATE
     vkimage.cpp
     config.cpp
     model.cpp
+    toml.c
+    vkinstance.cpp
+    vkswapchain.cpp
+    vkdevice.cpp
 )

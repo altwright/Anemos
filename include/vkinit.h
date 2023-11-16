@@ -62,4 +62,4 @@ Image createDepthBuffer(
     VkExtent2D swapchainExtent,
     VkSampleCountFlagBits sampleCount);
 Image createSampleImage(VkDevice device, const PhysicalDeviceDetails *physicalDevice, SwapchainDetails swapchain);
-VkState initVkState(const Window *window, size_t verticesCount, size_t indicesCount);
+VkState _initVkState(const Window *window, size_t verticesCount, size_t indicesCount);

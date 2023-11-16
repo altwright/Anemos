@@ -1,17 +1,10 @@
 #pragma once
 #include <vulkan/vulkan.h>
 #include "int.h"
+#include "window.h"
+#include "config.h"
 
-/**
- * @brief Must call destroySwapchainSupportDetails() after
- */
-typedef struct SwapchainSupportDetails{
-    VkSurfaceCapabilitiesKHR capabilities;
-    uint32_t formatsCount;
-    VkSurfaceFormatKHR *formats;//free
-    uint32_t presentModesCount;
-    VkPresentModeKHR *presentModes;//free
-} SwapchainSupportDetails;
+
 
 typedef struct QueueFamilyIndices{
     uint32_t queueFamilyCount;
@@ -60,7 +53,8 @@ typedef struct PhysicalDeviceDetails{
     VkPhysicalDevice handle;
     VkPhysicalDeviceMemoryProperties memProperties;
     VkPhysicalDeviceProperties deviceProperties;
-    VkSampleCountFlagBits maxSamples;
+    QueueFamilyIndices queueFamilyIndices;
+    VkSampleCountFlagBits maxMSAA;
 } PhysicalDeviceDetails;
 
 typedef struct DescriptorSet{
@@ -106,3 +100,6 @@ typedef struct VkState{
     Image depthBuffer;
     Image sampleImage;
 } VkState;
+
+VkState initVkState(Window *window, UserConfig *config);
+void destroyVkState(VkState *vk);

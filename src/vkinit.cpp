@@ -1185,7 +1185,7 @@ Image createSampleImage(VkDevice device, const PhysicalDeviceDetails *physicalDe
         physicalDevice->maxSamples);
 }
 
-VkState initVkState(const Window *window, size_t verticesCount, size_t indicesCount){
+VkState _initVkState(const Window *window, size_t verticesCount, size_t indicesCount){
     VkState vk{};
     vk.instance = createInstance("Anemos", VK_MAKE_VERSION(0, 1, 0), "Moebius", VK_MAKE_VERSION(0, 1, 0));
     vk.surface = createSurface(vk.instance, window->handle);

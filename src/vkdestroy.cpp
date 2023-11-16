@@ -22,7 +22,7 @@ void destroyImage(VkDevice device, Image *image){
     vkFreeMemory(device, image->memory, NULL);
 }
 
-void destroyVkState(VkState *vk){
+void _destroyVkState(VkState *vk){
     for(size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
         vkDestroySemaphore(vk->device, vk->frameControllers[i].synchronisers.imageAvailable, NULL);
         vkDestroySemaphore(vk->device, vk->frameControllers[i].synchronisers.renderFinished, NULL);
@@ -72,9 +72,3 @@ void destroyVkState(VkState *vk){
     vkDestroyInstance(vk->instance, NULL);
 }
 
-void destroySwapchainSupportDetails(SwapchainSupportDetails *details){
-    if (details->formats)
-        free(details->formats);
-    if (details->presentModes)
-        free(details->presentModes);
-}
