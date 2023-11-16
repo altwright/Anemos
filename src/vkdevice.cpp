@@ -231,3 +231,53 @@ PhysicalDeviceDetails selectPhysicalDevice(VkInstance instance, VkSurfaceKHR sur
 
     return physicalDeviceDetails;
 }
+
+VkDevice createLogicalDevice(const PhysicalDeviceDetails *physicalDevice)
+{
+    uint32_t queueCreateInfoCount = 1;
+    if (physicalDevice->queueFamilyIndices.graphicsQueue != physicalDevice->queueFamilyIndices.presentQueue){
+        queueCreateInfoCount = 2;
+        #ifndef NDEBUG
+        printf("Graphics and Present Queue Families are different\n");
+        #endif
+    }
+
+    VkDeviceQueueCreateInfo queueCreateInfo = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
+    queueCreateInfo.queueFamilyIndex = physicalDevice->queueFamilyIndices.graphicsQueue;
+    queueCreateInfo.queueCount = 1;
+    float queuePriority = 1.0f;
+    queueCreateInfo.pQueuePriorities = &queuePriority;
+
+    VkDeviceQueueCreateInfo *queueCreateInfos = (VkDeviceQueueCreateInfo*)malloc(sizeof(VkDeviceQueueCreateInfo)*queueCreateInfoCount);
+    queueCreateInfos[0] = queueCreateInfo;
+
+    if (physicalDevice->queueFamilyIndices.presentQueue != physicalDevice->queueFamilyIndices.graphicsQueue){
+        queueCreateInfo.queueFamilyIndex = physicalDevice->queueFamilyIndices.presentQueue;
+        queueCreateInfos[1] = queueCreateInfo;
+    }
+
+    VkPhysicalDeviceFeatures deviceFeatures = {};
+    deviceFeatures.samplerAnisotropy = VK_TRUE;
+
+    VkDeviceCreateInfo createInfo = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};
+    createInfo.queueCreateInfoCount = queueCreateInfoCount;
+    createInfo.pQueueCreateInfos = queueCreateInfos;
+    createInfo.enabledExtensionCount = DEVICE_EXTENSIONS_COUNT;
+    createInfo.ppEnabledExtensionNames = DEVICE_EXTENSIONS;
+    createInfo.pEnabledFeatures = &deviceFeatures;
+
+    VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures separateDepthStencilFeature = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SEPARATE_DEPTH_STENCIL_LAYOUTS_FEATURES};
+    separateDepthStencilFeature.separateDepthStencilLayouts = VK_TRUE;
+
+    createInfo.pNext = &separateDepthStencilFeature;
+
+    VkDevice device;
+    if (vkCreateDevice(physicalDevice->handle, &createInfo, NULL, &device)){
+        printf("Failed to create Logical Device\n");
+        exit(EXIT_FAILURE);
+    }
+
+    free(queueCreateInfos);
+
+    return device;
+}

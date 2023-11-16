@@ -1,6 +1,7 @@
 #pragma once
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
+#include "vkstate.h"
 
 typedef struct {
     VkSurfaceCapabilitiesKHR capabilities;
@@ -13,3 +14,9 @@ typedef struct {
 VkSurfaceKHR createSurface(VkInstance instance, GLFWwindow *window);
 SwapchainSupportDetails querySwapchainSupportDetails(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
 void destroySwapchainSupportDetails(SwapchainSupportDetails *details);
+SwapchainDetails createSwapchain(
+    VkDevice device, 
+    const PhysicalDeviceDetails *physicalDevice, 
+    VkSurfaceKHR surface, 
+    GLFWwindow *window);
+void destroySwapchain(VkDevice device, SwapchainDetails *swapchain);

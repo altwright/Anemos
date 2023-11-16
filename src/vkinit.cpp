@@ -1004,7 +1004,7 @@ void recreateSwapchain(
 
     vkDeviceWaitIdle(device);
 
-    destroySwapchainDetails(device, swapchainDetails);
+    destroySwapchain(device, swapchainDetails);
     *swapchainDetails = createSwapchain(device, physicalDevice->handle, surface, window);
 
     destroyImage(device, sampleImage);

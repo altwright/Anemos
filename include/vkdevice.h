@@ -3,3 +3,4 @@
 #include "vkstate.h"
 
 PhysicalDeviceDetails selectPhysicalDevice(VkInstance instance, VkSurfaceKHR surface);
+VkDevice createLogicalDevice(const PhysicalDeviceDetails *physicalDevice);

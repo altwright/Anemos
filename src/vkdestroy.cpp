@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "config.h"
 
-void destroySwapchainDetails(VkDevice device, SwapchainDetails *swapchainDetails){
+void destroySwapchain(VkDevice device, SwapchainDetails *swapchainDetails){
     for (size_t i = 0; i < swapchainDetails->imagesCount; i++)
         vkDestroyImageView(device, swapchainDetails->imageViews[i], NULL);
     free(swapchainDetails->imageViews);
@@ -40,7 +40,7 @@ void _destroyVkState(VkState *vk){
     
     vkDestroyRenderPass(vk->device, vk->renderPass, NULL);
 
-    destroySwapchainDetails(vk->device, &vk->swapchain);
+    destroySwapchain(vk->device, &vk->swapchain);
 
     for (size_t i = 0; i < vk->descriptors.setsCount; i++){
         vkUnmapMemory(vk->device, vk->descriptors.sets[i].buffer.memory);

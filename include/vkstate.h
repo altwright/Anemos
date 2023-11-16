@@ -4,8 +4,6 @@
 #include "window.h"
 #include "config.h"
 
-
-
 typedef struct QueueFamilyIndices{
     uint32_t queueFamilyCount;
     uint32_t graphicsQueue;
