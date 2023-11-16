@@ -9,6 +9,7 @@ typedef struct CommandBufferResources{
     VkQueue queue;
 } CommandBufferResources;
 
+VkCommandPool createCommandPool(VkDevice device, uint32_t queueIndex, VkCommandPoolCreateFlags createFlags);
 void recordDrawCommand(
     VkCommandBuffer commandBuffer, 
     VkRenderPass renderPass, 

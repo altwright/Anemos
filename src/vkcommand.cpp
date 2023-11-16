@@ -5,6 +5,21 @@
 #include "vkstate.h"
 #include "int.h"
 
+VkCommandPool createCommandPool(VkDevice device, uint32_t queueIndex, VkCommandPoolCreateFlags createFlags){
+    VkCommandPoolCreateInfo poolInfo{};
+    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    poolInfo.flags = createFlags;
+    poolInfo.queueFamilyIndex = queueIndex;
+
+    VkCommandPool pool;
+    if (vkCreateCommandPool(device, &poolInfo, NULL, &pool)){
+        printf("Failed to create Command Pool\n");
+        exit(EXIT_FAILURE);
+    }
+
+    return pool;
+}
+
 void recordDrawCommand(
     VkCommandBuffer commandBuffer, 
     VkRenderPass renderPass, 

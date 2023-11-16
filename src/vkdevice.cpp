@@ -9,6 +9,7 @@ QueueFamilyIndices findQueueFamilyIndices(VkPhysicalDevice physicalDevice, VkSur
     vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &indices.queueFamilyCount, NULL);
     indices.graphicsQueue = indices.queueFamilyCount;
     indices.presentQueue = indices.queueFamilyCount;
+    indices.transferQueue = indices.queueFamilyCount;
 
     VkQueueFamilyProperties *queueFamilies = (VkQueueFamilyProperties*)malloc(sizeof(VkQueueFamilyProperties)*indices.queueFamilyCount);
     vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &indices.queueFamilyCount, queueFamilies);
@@ -20,7 +21,7 @@ QueueFamilyIndices findQueueFamilyIndices(VkPhysicalDevice physicalDevice, VkSur
         VkBool32 presentSupport = false;
         vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, surface, &presentSupport);
 
-        if (presentSupport)
+        if (presentSupport && indices.presentQueue == indices.queueFamilyCount)
             indices.presentQueue = i;
         
         //Prefer the queues to be the same
@@ -29,8 +30,19 @@ QueueFamilyIndices findQueueFamilyIndices(VkPhysicalDevice physicalDevice, VkSur
             indices.graphicsQueue == indices.presentQueue)
             break;
     }
+
+    for (size_t i = 0; i < indices.queueFamilyCount; i++){
+        if ((queueFamilies[i].queueFlags & VK_QUEUE_TRANSFER_BIT) && i != indices.graphicsQueue){
+            indices.transferQueue = i;
+            break;
+        }
+    }
     
+    if (indices.transferQueue == indices.queueFamilyCount)
+        indices.transferQueue = indices.graphicsQueue;//Guaranteed to support transfer
+
     free(queueFamilies);
+
     return indices;
 }
 
@@ -236,9 +248,17 @@ VkDevice createLogicalDevice(const PhysicalDeviceDetails *physicalDevice)
 {
     uint32_t queueCreateInfoCount = 1;
     if (physicalDevice->queueFamilyIndices.graphicsQueue != physicalDevice->queueFamilyIndices.presentQueue){
-        queueCreateInfoCount = 2;
+        queueCreateInfoCount++;
         #ifndef NDEBUG
         printf("Graphics and Present Queue Families are different\n");
+        #endif
+    }
+    if (physicalDevice->queueFamilyIndices.transferQueue != physicalDevice->queueFamilyIndices.graphicsQueue){
+        queueCreateInfoCount++;
+    }
+    else {
+        #ifndef NDEBUG
+        printf("Graphics and Transfer Queue Families are the same\n");
         #endif
     }
 
@@ -250,10 +270,16 @@ VkDevice createLogicalDevice(const PhysicalDeviceDetails *physicalDevice)
 
     VkDeviceQueueCreateInfo *queueCreateInfos = (VkDeviceQueueCreateInfo*)malloc(sizeof(VkDeviceQueueCreateInfo)*queueCreateInfoCount);
     queueCreateInfos[0] = queueCreateInfo;
-
+    queueCreateInfoCount = 1;
     if (physicalDevice->queueFamilyIndices.presentQueue != physicalDevice->queueFamilyIndices.graphicsQueue){
+        queueCreateInfoCount++;
         queueCreateInfo.queueFamilyIndex = physicalDevice->queueFamilyIndices.presentQueue;
-        queueCreateInfos[1] = queueCreateInfo;
+        queueCreateInfos[queueCreateInfoCount-1] = queueCreateInfo;
+    }
+    if (physicalDevice->queueFamilyIndices.transferQueue != physicalDevice->queueFamilyIndices.graphicsQueue){
+        queueCreateInfoCount++;
+        queueCreateInfo.queueFamilyIndex = physicalDevice->queueFamilyIndices.transferQueue;
+        queueCreateInfos[queueCreateInfoCount-1] = queueCreateInfo;
     }
 
     VkPhysicalDeviceFeatures deviceFeatures = {};

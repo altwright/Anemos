@@ -1207,7 +1207,7 @@ VkState _initVkState(const Window *window, size_t verticesCount, size_t indicesC
         sizeof(u32)*indicesCount,
         VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    vk.graphicsCommandPool = createCommandPool(vk.device, queueFamilyIndices.graphicsQueue, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+    vk.graphicsCommandPool = createCommandPool(vk.device, queueFamilyIndices.graphicsQueue, 0);
     vk.transferCommandPool = createCommandPool(vk.device, queueFamilyIndices.graphicsQueue, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
     vk.frameControllers = createFrameStates(vk.device, vk.graphicsCommandPool, MAX_FRAMES_IN_FLIGHT);
     vk.texture = createTexture(vk.device, &vk.physicalDevice, vk.transferCommandPool, vk.graphicsQueue);

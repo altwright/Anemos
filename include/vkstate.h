@@ -5,14 +5,15 @@
 #include "config.h"
 
 typedef struct QueueFamilyIndices{
-    uint32_t queueFamilyCount;
-    uint32_t graphicsQueue;
-    uint32_t presentQueue;
+    u32 queueFamilyCount;
+    u32 graphicsQueue;
+    u32 presentQueue;
+    u32 transferQueue;
 } QueueFamilyIndices;
 
 typedef struct SwapchainDetails{
     VkSwapchainKHR handle;
-    uint32_t imagesCount;
+    u32 imagesCount;
     VkImage *images;//free
     VkImageView *imageViews;//free
     VkFormat format;
@@ -82,6 +83,7 @@ typedef struct VkState{
     VkDevice device;
     VkQueue graphicsQueue;
     VkQueue presentQueue;
+    VkQueue transferQueue;
     SwapchainDetails swapchain;
     VkRenderPass renderPass;
     VkDescriptorPool descriptorPool;
