@@ -47,6 +47,10 @@ VulkanState initVulkanState(Window *window, const UserConfig *config)
         &vk.swapchain,
         vk.depthImage.view,
         vk.samplingImage.view);
+    vk.graphicsPipeline = createGraphicsPipeline(
+        vk.device,
+        vk.renderPass,
+        vk.physicalDevice.maxSamplingCount);
     vk.graphicsCommandPool = createCommandPool(
         vk.device, 
         vk.physicalDevice.queueFamilyIndices.graphicsQueue, 
@@ -63,6 +67,9 @@ void destroyVulkanState(VulkanState *vk)
 {
     vkDestroyCommandPool(vk->device, vk->transferCommandPool, NULL);
     vkDestroyCommandPool(vk->device, vk->graphicsCommandPool, NULL);
+
+    vkDestroyPipeline(vk->device, vk->graphicsPipeline.handle, NULL);
+    vkDestroyPipelineLayout(vk->device, vk->graphicsPipeline.layout, NULL);
 
     destroyFramebuffers(vk->device, &vk->framebuffers);
 

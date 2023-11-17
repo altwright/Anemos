@@ -8,3 +8,7 @@ VkRenderPass createRenderPass(
     VkFormat depthImageFormat,
     VkFormat samplingImageFormat,
     VkSampleCountFlagBits samplingCount);
+PipelineDetails createGraphicsPipeline(
+    VkDevice device, 
+    VkRenderPass renderPass, 
+    VkSampleCountFlagBits samplingCount);

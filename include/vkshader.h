@@ -18,4 +18,9 @@ typedef struct UniformBufferData{
     mat4 projection;
 } UniformBufferData;
 
+typedef struct {
+    mat4 mvp;
+} PushConstant;
+
 void updateUniformBuffer(void *mappedUniformBuffer, VkExtent2D swapchainExtent);
+VkShaderModule createShaderModule(VkDevice device, uint32_t *code, size_t numBytes);

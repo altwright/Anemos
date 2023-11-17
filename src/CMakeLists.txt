@@ -6,7 +6,6 @@ target_sources(anemos PRIVATE
     vkcommand.cpp
     vertex.cpp
     vkmemory.cpp
-    vkdescriptor.cpp
     timing.cpp
     config.cpp
     model.cpp
@@ -16,4 +15,5 @@ target_sources(anemos PRIVATE
     vkdevice.cpp
     vkpipeline.cpp
     vkattachment.cpp
+    vkshader.cpp
 )

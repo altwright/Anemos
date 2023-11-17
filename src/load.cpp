@@ -1,10 +1,21 @@
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #define TINYOBJ_LOADER_C_IMPLEMENTATION
 #include "tinyobj_loader_c.h"
 #include "load.h"
+
+FilePath createFilePath(const char *dirPath, const char *fileName)
+{
+    FilePath filePath = {};
+
+    strncat(filePath.str, dirPath, FILEPATH_SIZE/2 - 1);
+    strncat(filePath.str, fileName, FILEPATH_SIZE/2);
+
+    return filePath;
+}
 
 FileContents readFileContents(const char *filepath){
     FileContents fileContents{

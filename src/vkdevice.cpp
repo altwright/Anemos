@@ -248,6 +248,7 @@ PhysicalDeviceDetails selectPhysicalDevice(VkInstance instance, VkSurfaceKHR sur
 
     #ifndef NDEBUG
     printf("Max Sampling Count: %d\n", physicalDeviceDetails.maxSamplingCount);
+    printf("Max Push Constant Size: %d\n", physicalDeviceDetails.deviceProperties.limits.maxPushConstantsSize);
     #endif
 
     return physicalDeviceDetails;
