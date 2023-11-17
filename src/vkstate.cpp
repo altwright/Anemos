@@ -9,6 +9,7 @@
 #include "vkcommand.h"
 #include "vkmemory.h"
 #include "vkimage.h"
+#include "vkpipeline.h"
 
 VulkanState initVulkanState(Window *window, UserConfig *config)
 {
@@ -34,6 +35,13 @@ VulkanState initVulkanState(Window *window, UserConfig *config)
         vk.swapchain.format,
         vk.swapchain.extent,
         vk.physicalDevice.maxSamplingCount);
+    vk.renderPass = createRenderPass(
+        vk.device,
+        &vk.physicalDevice,
+        &vk.swapchain,
+        &vk.depthImage,
+        &vk.samplingImage,
+        vk.physicalDevice.maxSamplingCount);
     vk.graphicsCommandPool = createCommandPool(
         vk.device, 
         vk.physicalDevice.queueFamilyIndices.graphicsQueue, 
@@ -50,6 +58,8 @@ void destroyVkState(VulkanState *vk)
 {
     vkDestroyCommandPool(vk->device, vk->transferCommandPool, NULL);
     vkDestroyCommandPool(vk->device, vk->graphicsCommandPool, NULL);
+
+    vkDestroyRenderPass(vk->device, vk->renderPass, NULL);
 
     vkDestroyImageView(vk->device, vk->samplingImage.view, NULL);
     vmaDestroyImage(vk->allocator, vk->samplingImage.handle, vk->samplingImage.alloc);

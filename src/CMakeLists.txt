@@ -15,4 +15,5 @@ target_sources(anemos PRIVATE
     vkinstance.cpp
     vkswapchain.cpp
     vkdevice.cpp
+    vkpipeline.cpp
 )
