@@ -10,6 +10,7 @@
 #include "vkmemory.h"
 #include "vkattachment.h"
 #include "vkpipeline.h"
+#include "vkbuffer.h"
 
 VulkanState initVulkanState(Window *window, const UserConfig *config)
 {
@@ -59,12 +60,15 @@ VulkanState initVulkanState(Window *window, const UserConfig *config)
         vk.device, 
         vk.physicalDevice.queueFamilyIndices.transferQueue, 
         VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
+    vk.deviceBuffer = createDeviceBuffer(vk.allocator, 1 << 28);
 
     return vk;
 }
 
 void destroyVulkanState(VulkanState *vk)
 {
+    vmaDestroyBuffer(vk->allocator, vk->deviceBuffer.handle, vk->deviceBuffer.alloc);
+
     vkDestroyCommandPool(vk->device, vk->transferCommandPool, NULL);
     vkDestroyCommandPool(vk->device, vk->graphicsCommandPool, NULL);
 

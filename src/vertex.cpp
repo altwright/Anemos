@@ -37,6 +37,7 @@ VertexInputAttributes getVertexInputAttributes(){
     return attributes;
 }
 
+/*
 void copyVerticesToStagingBuffer(VkDevice device, Buffer vertexStagingBuffer, VkDeviceSize offset, const Vertex *vertices, size_t verticesCount)
 {
     assert((sizeof(Vertex)*verticesCount) <= (vertexStagingBuffer.size - offset));
@@ -56,3 +57,5 @@ void copyIndicesToStagingBuffer(VkDevice device, Buffer indexStagingBuffer, VkDe
     memcpy(data, indices, sizeof(indices[0])*indicesCount);
     vkUnmapMemory(device, indexStagingBuffer.memory);
 }
+
+*/

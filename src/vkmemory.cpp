@@ -8,6 +8,22 @@
 #include "vkcommand.h"
 #include "config.h"
 
+VmaAllocator createAllocator(VkDevice device, VkInstance instance, VkPhysicalDevice physicalDevice)
+{
+    VmaAllocatorCreateInfo allocatorInfo = {};
+    allocatorInfo.device = device;
+    allocatorInfo.physicalDevice = physicalDevice;
+    allocatorInfo.instance = instance;
+    allocatorInfo.vulkanApiVersion = VULKAN_VERSION;
+
+    VmaAllocator allocator = {};
+    if (vmaCreateAllocator(&allocatorInfo, &allocator)){
+        fprintf(stderr, "Failed to create Vulkan Memory Allocator");
+        exit(EXIT_FAILURE);
+    }
+    return allocator;
+}
+
 u32 findVkMemoryType(u32 typeFilter, const VkPhysicalDeviceMemoryProperties *memProperties, VkMemoryPropertyFlags desiredPropertyFlags)
 {
     for (u32 i = 0; i < memProperties->memoryTypeCount; i++)
@@ -20,6 +36,7 @@ u32 findVkMemoryType(u32 typeFilter, const VkPhysicalDeviceMemoryProperties *mem
     return UINT32_MAX;
 }
 
+/*
 Buffer createBuffer(
     VkDevice device,
     const PhysicalDeviceDetails *physicalDevice,
@@ -243,18 +260,5 @@ void copyPixelsToLocalImage(
     vkFreeMemory(device, stagingBuffer.memory, NULL);
 }
 
-VmaAllocator createAllocator(VkDevice device, VkInstance instance, VkPhysicalDevice physicalDevice)
-{
-    VmaAllocatorCreateInfo allocatorInfo = {};
-    allocatorInfo.device = device;
-    allocatorInfo.physicalDevice = physicalDevice;
-    allocatorInfo.instance = instance;
-    allocatorInfo.vulkanApiVersion = VULKAN_VERSION;
 
-    VmaAllocator allocator = {};
-    if (vmaCreateAllocator(&allocatorInfo, &allocator)){
-        fprintf(stderr, "Failed to create Vulkan Memory Allocator");
-        exit(EXIT_FAILURE);
-    }
-    return allocator;
-}
+*/

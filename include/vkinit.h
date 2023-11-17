@@ -32,7 +32,7 @@ PipelineDetails createGraphicsPipeline(
     VkSampleCountFlagBits sampleCount);
 VkCommandPool createCommandPool(VkDevice device, uint32_t queueIndex, VkCommandPoolCreateFlags createFlags);
 VkCommandBuffer createCommandBuffer(VkDevice device, VkCommandPool commandPool);
-Synchronisers createSynchronisers(VkDevice device);
+FrameSynchronisers createSynchronisers(VkDevice device);
 FrameControllers* createFrameStates(VkDevice device, VkCommandPool commandPool, size_t numFrames);
 Framebuffers createFramebuffers(
     VkDevice device, 

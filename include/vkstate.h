@@ -35,18 +35,12 @@ typedef struct {
     VkSemaphore imageAvailable;
     VkSemaphore renderFinished;
     VkFence inFlight;
-} Synchronisers;
-
-typedef struct {
-    VkCommandBuffer commandBuffer;
-    Synchronisers synchronisers;
-} FrameControllers;
+} FrameSynchronisers;
 
 typedef struct {
     VkBuffer handle;
-    VkDeviceSize size;
-    VkDeviceMemory memory;
-    VkDeviceSize physicalSize;
+    VmaAllocation alloc;
+    VmaAllocationInfo info;
 } Buffer;
 
 typedef struct {
@@ -87,20 +81,15 @@ typedef struct {
     VkQueue presentQueue;
     VkQueue transferQueue;
     SwapchainDetails swapchain;
-    VkRenderPass renderPass;
-    VkDescriptorPool descriptorPool;
-    Descriptors descriptors;
-    PipelineDetails graphicsPipeline;
-    Framebuffers framebuffers;
-    Buffer vertexBuffer;
-    Buffer indexBuffer;
-    VkCommandPool graphicsCommandPool;
-    VkCommandPool transferCommandPool;
-    FrameControllers *frameControllers;//free
-    Image texture;
-    VkSampler textureSampler;
     Image depthImage;
     Image samplingImage;
+    VkRenderPass renderPass;
+    Framebuffers framebuffers;
+    PipelineDetails graphicsPipeline;
+    VkCommandPool graphicsCommandPool;
+    VkCommandPool transferCommandPool;
+    FrameSynchronisers frameSyncers[MAX_FRAMES_IN_FLIGHT];
+    Buffer deviceBuffer;
 } VulkanState;
 
 VulkanState initVulkanState(Window *window, const UserConfig *config);
