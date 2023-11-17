@@ -76,3 +76,57 @@ Image createDepthImage(
 
     return depthImage;
 }
+
+Image createSamplingImage(
+    VmaAllocator allocator, 
+    VkDevice device, 
+    VkFormat format, 
+    VkExtent2D extent,
+    VkSampleCountFlagBits samplingCount)
+{
+    VkImageCreateInfo imageInfo = {};
+    imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    imageInfo.imageType = VK_IMAGE_TYPE_2D;
+    imageInfo.extent.width = extent.width;
+    imageInfo.extent.height = extent.height;
+    imageInfo.extent.depth = 1;
+    imageInfo.mipLevels = 1;
+    imageInfo.arrayLayers = 1;
+    imageInfo.format = format;
+    imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    imageInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    imageInfo.samples = samplingCount;
+
+    VmaAllocationCreateInfo allocInfo = {};
+    allocInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
+    allocInfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
+
+    Image samplingImage = {};
+    if (vmaCreateImage(allocator, &imageInfo, &allocInfo, &samplingImage.handle, &samplingImage.alloc, NULL)){
+        fprintf(stderr, "Failed to allocate Image\n");
+        exit(EXIT_FAILURE);
+    }
+    
+    VkImageViewCreateInfo viewInfo = {};
+    viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    viewInfo.image = samplingImage.handle;
+    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    viewInfo.format = format;
+    viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    viewInfo.subresourceRange.baseMipLevel = 0;
+    viewInfo.subresourceRange.levelCount = 1;
+    viewInfo.subresourceRange.baseArrayLayer = 0;
+    viewInfo.subresourceRange.layerCount = 1;
+
+    if (vkCreateImageView(device, &viewInfo, NULL, &samplingImage.view)){
+        fprintf(stderr, "Failed to create Image View\n");
+        exit(EXIT_FAILURE);
+    }
+
+    samplingImage.format = format;
+    samplingImage.extent = extent;
+
+    return samplingImage;
+}

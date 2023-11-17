@@ -21,6 +21,19 @@ VulkanState initVulkanState(Window *window, UserConfig *config)
     vkGetDeviceQueue(vk.device, vk.physicalDevice.queueFamilyIndices.presentQueue, 0, &vk.presentQueue);
     vkGetDeviceQueue(vk.device, vk.physicalDevice.queueFamilyIndices.transferQueue, 0, &vk.transferQueue);
     vk.swapchain = createSwapchain(vk.device, &vk.physicalDevice, vk.surface, window->handle);
+    vk.allocator = createAllocator(vk.device, vk.instance, vk.physicalDevice.handle);
+    vk.depthImage = createDepthImage(
+        vk.allocator, 
+        vk.device, 
+        vk.physicalDevice.handle, 
+        vk.swapchain.extent, 
+        vk.physicalDevice.maxSamplingCount);
+    vk.samplingImage = createSamplingImage(
+        vk.allocator,
+        vk.device,
+        vk.swapchain.format,
+        vk.swapchain.extent,
+        vk.physicalDevice.maxSamplingCount);
     vk.graphicsCommandPool = createCommandPool(
         vk.device, 
         vk.physicalDevice.queueFamilyIndices.graphicsQueue, 
@@ -29,24 +42,21 @@ VulkanState initVulkanState(Window *window, UserConfig *config)
         vk.device, 
         vk.physicalDevice.queueFamilyIndices.transferQueue, 
         VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
-    vk.allocator = createAllocator(vk.device, vk.instance, vk.physicalDevice.handle);
-    vk.depthImage = createDepthImage(
-        vk.allocator, 
-        vk.device, 
-        vk.physicalDevice.handle, 
-        vk.swapchain.extent, 
-        vk.physicalDevice.maxSamplingCount);
 
     return vk;
 }
 
 void destroyVkState(VulkanState *vk)
 {
+    vkDestroyCommandPool(vk->device, vk->transferCommandPool, NULL);
+    vkDestroyCommandPool(vk->device, vk->graphicsCommandPool, NULL);
+
+    vkDestroyImageView(vk->device, vk->samplingImage.view, NULL);
+    vmaDestroyImage(vk->allocator, vk->samplingImage.handle, vk->samplingImage.alloc);
+
     vkDestroyImageView(vk->device, vk->depthImage.view, NULL);
     vmaDestroyImage(vk->allocator, vk->depthImage.handle, vk->depthImage.alloc);
 
-    vkDestroyCommandPool(vk->device, vk->transferCommandPool, NULL);
-    vkDestroyCommandPool(vk->device, vk->graphicsCommandPool, NULL);
     destroySwapchain(vk->device, &vk->swapchain);
     vmaDestroyAllocator(vk->allocator);
     vkDestroyDevice(vk->device, NULL);

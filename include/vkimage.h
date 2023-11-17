@@ -8,3 +8,9 @@ Image createDepthImage(
     VkPhysicalDevice physicalDevice,
     VkExtent2D extent,
     VkSampleCountFlagBits samplingCount);
+Image createSamplingImage(
+    VmaAllocator allocator, 
+    VkDevice device, 
+    VkFormat format, 
+    VkExtent2D extent,
+    VkSampleCountFlagBits samplingCount);
