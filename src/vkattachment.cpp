@@ -1,4 +1,4 @@
-#include "vkimage.h"
+#include "vkattachment.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -129,4 +129,54 @@ Image createSamplingImage(
     samplingImage.extent = extent;
 
     return samplingImage;
+}
+
+Framebuffers createFramebuffers(
+    VkDevice device, 
+    VkRenderPass renderPass, 
+    const SwapchainDetails *swapchainDetails,
+    VkImageView depthImageView,
+    VkImageView samplingImageView)
+{
+    Framebuffers framebuffers{};
+    framebuffers.count = swapchainDetails->imagesCount;
+    framebuffers.handles = (VkFramebuffer*)malloc(sizeof(VkFramebuffer)*framebuffers.count);
+
+    for(size_t i = 0; i < framebuffers.count; i++){
+        //The color attachment differs for every swap chain image, but the same depth image 
+        //can be used by all of them because only a single subpass is running at the same 
+        //time due to our semaphores.
+        u32 attachmentsCount = 3;
+        VkImageView attachments[attachmentsCount] = {
+            samplingImageView, 
+            depthImageView, 
+            swapchainDetails->imageViews[i]};
+
+        VkFramebufferCreateInfo framebufferInfo{};
+        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebufferInfo.renderPass = renderPass;
+        //You can only use a framebuffer with the render passes that it is compatible 
+        //with, which roughly means that they use the same number and type of attachments.
+        framebufferInfo.attachmentCount = attachmentsCount;
+        framebufferInfo.pAttachments = attachments;
+        //The attachmentCount and pAttachments parameters specify the VkImageView objects 
+        //that should be bound to the respective attachment descriptions in the render pass pAttachment array.
+        framebufferInfo.width = swapchainDetails->extent.width;
+        framebufferInfo.height = swapchainDetails->extent.height;
+        framebufferInfo.layers = 1;
+
+        if (vkCreateFramebuffer(device, &framebufferInfo, NULL, &framebuffers.handles[i])){
+            printf("Failed to create Framebuffer %ld\n", i);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    return framebuffers;
+}
+
+void destroyFramebuffers(VkDevice device, Framebuffers *framebuffers)
+{
+    for(size_t i = 0; i < framebuffers->count; i++)
+        vkDestroyFramebuffer(device, framebuffers->handles[i], NULL);
+    free(framebuffers->handles);
 }

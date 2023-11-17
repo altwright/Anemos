@@ -103,5 +103,5 @@ typedef struct {
     Image samplingImage;
 } VulkanState;
 
-VulkanState initVulkanState(Window *window, UserConfig *config);
-void destroyVkState(VulkanState *vk);
+VulkanState initVulkanState(Window *window, const UserConfig *config);
+void destroyVulkanState(VulkanState *vk);

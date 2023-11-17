@@ -14,3 +14,10 @@ Image createSamplingImage(
     VkFormat format, 
     VkExtent2D extent,
     VkSampleCountFlagBits samplingCount);
+Framebuffers createFramebuffers(
+    VkDevice device, 
+    VkRenderPass renderPass, 
+    const SwapchainDetails *swapchainDetails,
+    VkImageView depthBufferView,
+    VkImageView samplingImageView);
+void destroyFramebuffers(VkDevice device, Framebuffers *framebuffers);

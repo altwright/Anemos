@@ -4,8 +4,7 @@
 
 VkRenderPass createRenderPass(
     VkDevice device, 
-    const PhysicalDeviceDetails *physicalDevice,
-    const SwapchainDetails *swapchain,
-    const Image *depthImage,
-    const Image *samplingImage,
+    VkFormat swapchainFormat,
+    VkFormat depthImageFormat,
+    VkFormat samplingImageFormat,
     VkSampleCountFlagBits samplingCount);

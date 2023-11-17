@@ -8,7 +8,6 @@ target_sources(anemos PRIVATE
     vkmemory.cpp
     vkdescriptor.cpp
     timing.cpp
-    vkimage.cpp
     config.cpp
     model.cpp
     toml.c
@@ -16,4 +15,5 @@ target_sources(anemos PRIVATE
     vkswapchain.cpp
     vkdevice.cpp
     vkpipeline.cpp
+    vkattachment.cpp
 )

@@ -4,14 +4,13 @@
 
 VkRenderPass createRenderPass(
     VkDevice device, 
-    const PhysicalDeviceDetails *physicalDevice,
-    const SwapchainDetails *swapchain,
-    const Image *depthImage,
-    const Image *samplingImage,
+    VkFormat swapchainFormat,
+    VkFormat depthImageFormat,
+    VkFormat samplingImageFormat,
     VkSampleCountFlagBits samplingCount)
 {
     VkAttachmentDescription samplingAttachmentDesc = {};
-    samplingAttachmentDesc.format = samplingImage->format;
+    samplingAttachmentDesc.format = samplingImageFormat;
     samplingAttachmentDesc.samples = samplingCount;
     samplingAttachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     samplingAttachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -21,7 +20,7 @@ VkRenderPass createRenderPass(
     samplingAttachmentDesc.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     VkAttachmentDescription depthAttachmentDesc = {};
-    depthAttachmentDesc.format = depthImage->format;
+    depthAttachmentDesc.format = depthImageFormat;
     depthAttachmentDesc.samples = samplingCount;
     depthAttachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     depthAttachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -31,7 +30,7 @@ VkRenderPass createRenderPass(
     depthAttachmentDesc.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
     
     VkAttachmentDescription resolveAttachmentDesc = {};
-    resolveAttachmentDesc.format = swapchain->format;
+    resolveAttachmentDesc.format = swapchainFormat;
     resolveAttachmentDesc.samples = VK_SAMPLE_COUNT_1_BIT;
     resolveAttachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     resolveAttachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;

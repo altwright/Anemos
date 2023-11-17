@@ -8,10 +8,10 @@
 #include "vkdevice.h"
 #include "vkcommand.h"
 #include "vkmemory.h"
-#include "vkimage.h"
+#include "vkattachment.h"
 #include "vkpipeline.h"
 
-VulkanState initVulkanState(Window *window, UserConfig *config)
+VulkanState initVulkanState(Window *window, const UserConfig *config)
 {
     VulkanState vk = {};
     vk.instance = createInstance(config);
@@ -37,11 +37,16 @@ VulkanState initVulkanState(Window *window, UserConfig *config)
         vk.physicalDevice.maxSamplingCount);
     vk.renderPass = createRenderPass(
         vk.device,
-        &vk.physicalDevice,
-        &vk.swapchain,
-        &vk.depthImage,
-        &vk.samplingImage,
+        vk.swapchain.format,
+        vk.depthImage.format,
+        vk.samplingImage.format,
         vk.physicalDevice.maxSamplingCount);
+    vk.framebuffers = createFramebuffers(
+        vk.device,
+        vk.renderPass,
+        &vk.swapchain,
+        vk.depthImage.view,
+        vk.samplingImage.view);
     vk.graphicsCommandPool = createCommandPool(
         vk.device, 
         vk.physicalDevice.queueFamilyIndices.graphicsQueue, 
@@ -54,10 +59,12 @@ VulkanState initVulkanState(Window *window, UserConfig *config)
     return vk;
 }
 
-void destroyVkState(VulkanState *vk)
+void destroyVulkanState(VulkanState *vk)
 {
     vkDestroyCommandPool(vk->device, vk->transferCommandPool, NULL);
     vkDestroyCommandPool(vk->device, vk->graphicsCommandPool, NULL);
+
+    destroyFramebuffers(vk->device, &vk->framebuffers);
 
     vkDestroyRenderPass(vk->device, vk->renderPass, NULL);
 

@@ -24,7 +24,7 @@ int main(int, char**){
     }
 
     destroyWindow(&window);
-    destroyVkState(&vk);
+    destroyVulkanState(&vk);
 
     return 0;
 }
