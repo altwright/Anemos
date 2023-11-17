@@ -20,6 +20,7 @@ add_subdirectory(src)
 add_subdirectory(libs/glfw)
 add_subdirectory(libs/cglm)
 add_subdirectory(libs/VulkanMemoryAllocator)
+add_subdirectory(libs/KTX-Software)
 
 find_package(Vulkan REQUIRED)
 
@@ -28,6 +29,7 @@ target_link_libraries(anemos PRIVATE
     Vulkan::Vulkan
     cglm
     GPUOpen::VulkanMemoryAllocator
+    ktx
 )
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})

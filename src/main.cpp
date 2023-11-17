@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <vulkan/vulkan.h>
+#include <ktxvulkan.h>
 #include "window.h"
 #include "config.h"
 #include "vkstate.h"
