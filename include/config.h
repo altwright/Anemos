@@ -14,6 +14,7 @@ extern const char* DEVICE_EXTENSIONS[DEVICE_EXTENSIONS_COUNT];
 #define CONFIG_FILE "./config.toml"
 #define TITLE "ANEMOS"
 #define VERSION VK_MAKE_VERSION(0, 1, 0)
+#define VULKAN_VERSION VK_API_VERSION_1_3
 
 typedef struct{
     struct {

@@ -225,16 +225,16 @@ PhysicalDeviceDetails selectPhysicalDevice(VkInstance instance, VkSurfaceKHR sur
         physicalDeviceDetails.deviceProperties.limits.framebufferDepthSampleCounts;
 
     if (maxMSAA & VK_SAMPLE_COUNT_64_BIT){
-        physicalDeviceDetails.maxMSAA = VK_SAMPLE_COUNT_64_BIT;
+        physicalDeviceDetails.maxSamplingCount = VK_SAMPLE_COUNT_64_BIT;
     }
     else if (maxMSAA & VK_SAMPLE_COUNT_32_BIT){
-        physicalDeviceDetails.maxMSAA = VK_SAMPLE_COUNT_32_BIT;
+        physicalDeviceDetails.maxSamplingCount = VK_SAMPLE_COUNT_32_BIT;
     }
     else if (maxMSAA & VK_SAMPLE_COUNT_16_BIT){
-        physicalDeviceDetails.maxMSAA = VK_SAMPLE_COUNT_16_BIT;
+        physicalDeviceDetails.maxSamplingCount = VK_SAMPLE_COUNT_16_BIT;
     }
     else if (maxMSAA & VK_SAMPLE_COUNT_8_BIT){
-        physicalDeviceDetails.maxMSAA = VK_SAMPLE_COUNT_8_BIT;
+        physicalDeviceDetails.maxSamplingCount = VK_SAMPLE_COUNT_8_BIT;
     }
     else {
         fprintf(stderr, "Failed to find a suitable Max Sample Count\n");

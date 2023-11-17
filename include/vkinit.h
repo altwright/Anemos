@@ -56,10 +56,10 @@ Image createTexture(
     VkCommandPool transientCommandPool,
     VkQueue transferQueue);
 VkSampler createTextureSampler(VkDevice device, const PhysicalDeviceDetails *physicalDevice);
-Image createDepthBuffer(
+Image createDepthBufferImage(
     VkDevice device, 
     const PhysicalDeviceDetails *physicalDevice, 
     VkExtent2D swapchainExtent,
     VkSampleCountFlagBits sampleCount);
 Image createSampleImage(VkDevice device, const PhysicalDeviceDetails *physicalDevice, SwapchainDetails swapchain);
-VkState _initVkState(const Window *window, size_t verticesCount, size_t indicesCount);
+VulkanState _initVkState(const Window *window, size_t verticesCount, size_t indicesCount);

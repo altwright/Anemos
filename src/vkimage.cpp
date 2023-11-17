@@ -4,6 +4,7 @@
 #include <assert.h>
 #include "vkstate.h"
 #include "vkmemory.h"
+#include "vkdevice.h"
 #include "int.h"
 
 Image createImage(
@@ -76,4 +77,34 @@ Image createImage(
     }
 
     return image;
+}
+
+Image createDepthBufferImage(
+    VkDevice device, 
+    const PhysicalDeviceDetails *physicalDevice, 
+    VkExtent2D extent,
+    VkSampleCountFlagBits samplingCount)
+{
+    size_t candidateFormatsCount = 3;
+    VkFormat candidateFormats[candidateFormatsCount] = {
+        VK_FORMAT_D32_SFLOAT, 
+        VK_FORMAT_D32_SFLOAT_S8_UINT, 
+        VK_FORMAT_D24_UNORM_S8_UINT};
+    VkFormat format = findSupportedFormat(
+        physicalDevice->handle, 
+        candidateFormats, 
+        candidateFormatsCount, 
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+    
+    return createImage(
+        device, 
+        &physicalDevice->memProperties,
+        extent,
+        format,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        VK_IMAGE_ASPECT_DEPTH_BIT,
+        samplingCount);
 }

@@ -1,9 +1,12 @@
 #include "vkmemory.h"
+#define VMA_IMPLEMENTATION
+#include <vk_mem_alloc.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
 #include "vkcommand.h"
+#include "config.h"
 
 u32 findVkMemoryType(u32 typeFilter, const VkPhysicalDeviceMemoryProperties *memProperties, VkMemoryPropertyFlags desiredPropertyFlags)
 {
@@ -238,4 +241,20 @@ void copyPixelsToLocalImage(
 
     vkDestroyBuffer(device, stagingBuffer.handle, NULL);
     vkFreeMemory(device, stagingBuffer.memory, NULL);
+}
+
+VmaAllocator createAllocator(VkDevice device, VkInstance instance, VkPhysicalDevice physicalDevice)
+{
+    VmaAllocatorCreateInfo allocatorInfo = {};
+    allocatorInfo.device = device;
+    allocatorInfo.physicalDevice = physicalDevice;
+    allocatorInfo.instance = instance;
+    allocatorInfo.vulkanApiVersion = VULKAN_VERSION;
+
+    VmaAllocator allocator = {};
+    if (vmaCreateAllocator(&allocatorInfo, &allocator)){
+        fprintf(stderr, "Failed to create Vulkan Memory Allocator");
+        exit(EXIT_FAILURE);
+    }
+    return allocator;
 }

@@ -46,3 +46,4 @@ void copyPixelsToLocalImage(
     u32 numTexelRows,
     u32 numTexelCols,
     VkImage dstImage);
+VmaAllocator createAllocator(VkDevice device, VkInstance instance, VkPhysicalDevice physicalDevice);

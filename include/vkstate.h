@@ -1,17 +1,18 @@
 #pragma once
 #include <vulkan/vulkan.h>
+#include <vk_mem_alloc.h>
 #include "int.h"
 #include "window.h"
 #include "config.h"
 
-typedef struct QueueFamilyIndices{
+typedef struct {
     u32 queueFamilyCount;
     u32 graphicsQueue;
     u32 presentQueue;
     u32 transferQueue;
 } QueueFamilyIndices;
 
-typedef struct SwapchainDetails{
+typedef struct {
     VkSwapchainKHR handle;
     u32 imagesCount;
     VkImage *images;//free
@@ -20,55 +21,55 @@ typedef struct SwapchainDetails{
     VkExtent2D extent;
 } SwapchainDetails;
 
-typedef struct PipelineDetails{
+typedef struct {
     VkPipeline handle;
     VkPipelineLayout layout;
 } PipelineDetails;
 
-typedef struct Framebuffers{
+typedef struct {
     size_t count;
     VkFramebuffer *handles;//free
 } Framebuffers;
 
-typedef struct Synchronisers{
+typedef struct {
     VkSemaphore imageAvailable;
     VkSemaphore renderFinished;
     VkFence inFlight;
 } Synchronisers;
 
-typedef struct FrameControllers{
+typedef struct {
     VkCommandBuffer commandBuffer;
     Synchronisers synchronisers;
 } FrameControllers;
 
-typedef struct Buffer{
+typedef struct {
     VkBuffer handle;
     VkDeviceSize size;
     VkDeviceMemory memory;
     VkDeviceSize physicalSize;
 } Buffer;
 
-typedef struct PhysicalDeviceDetails{
+typedef struct {
     VkPhysicalDevice handle;
     VkPhysicalDeviceMemoryProperties memProperties;
     VkPhysicalDeviceProperties deviceProperties;
     QueueFamilyIndices queueFamilyIndices;
-    VkSampleCountFlagBits maxMSAA;
+    VkSampleCountFlagBits maxSamplingCount;
 } PhysicalDeviceDetails;
 
-typedef struct DescriptorSet{
+typedef struct {
     VkDescriptorSet handle;
     Buffer buffer;
     void* mappedBuffer;
 } DescriptorSet;
 
-typedef struct Descriptors{
+typedef struct {
     DescriptorSet *sets;//free
     size_t setsCount;
     VkDescriptorSetLayout layout;
 } Descriptors;
 
-typedef struct Image{
+typedef struct {
     VkImage handle;
     VkDeviceMemory memory;
     VkImageView view;
@@ -76,11 +77,12 @@ typedef struct Image{
     VkFormat format;
 } Image;
 
-typedef struct VkState{
+typedef struct {
     VkInstance instance;
     VkSurfaceKHR surface;
     PhysicalDeviceDetails physicalDevice;
     VkDevice device;
+    VmaAllocator allocator;
     VkQueue graphicsQueue;
     VkQueue presentQueue;
     VkQueue transferQueue;
@@ -98,8 +100,8 @@ typedef struct VkState{
     Image texture;
     VkSampler textureSampler;
     Image depthBuffer;
-    Image sampleImage;
-} VkState;
+    Image samplingImage;
+} VulkanState;
 
-VkState initVkState(Window *window, UserConfig *config);
-void destroyVkState(VkState *vk);
+VulkanState initVulkanState(Window *window, UserConfig *config);
+void destroyVkState(VulkanState *vk);

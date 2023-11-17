@@ -17,7 +17,7 @@ int main(int, char**){
         exit(EXIT_FAILURE);
     }
 
-    VkState vk = initVkState(&window, &userConfig);
+    VulkanState vk = initVulkanState(&window, &userConfig);
 
     while (!glfwWindowShouldClose(window.handle)){
         glfwPollEvents();
