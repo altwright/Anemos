@@ -2,13 +2,9 @@
 #include <vulkan/vulkan.h>
 #include "vkstate.h"
 
-Image createImage(
-    VkDevice device, 
-    const VkPhysicalDeviceMemoryProperties *memProperties,
+Image createDepthImage(
+    VmaAllocator allocator,
+    VkDevice device,
+    VkPhysicalDevice physicalDevice,
     VkExtent2D extent,
-    VkFormat format, 
-    VkImageTiling tiling,
-    VkImageUsageFlags usage,
-    VkMemoryPropertyFlags desiredMemProperties,
-    VkImageAspectFlags imageAspectFlags,
-    VkSampleCountFlagBits sampleCount);
+    VkSampleCountFlagBits samplingCount);

@@ -221,25 +221,34 @@ PhysicalDeviceDetails selectPhysicalDevice(VkInstance instance, VkSurfaceKHR sur
     printf("Selected GPU: %s\n", &physicalDeviceDetails.deviceProperties.deviceName);
     #endif
 
-    VkSampleCountFlags maxMSAA = physicalDeviceDetails.deviceProperties.limits.framebufferColorSampleCounts &
+    VkSampleCountFlags maxSamplingCount = physicalDeviceDetails.deviceProperties.limits.framebufferColorSampleCounts &
         physicalDeviceDetails.deviceProperties.limits.framebufferDepthSampleCounts;
 
-    if (maxMSAA & VK_SAMPLE_COUNT_64_BIT){
+    if (maxSamplingCount & VK_SAMPLE_COUNT_64_BIT){
         physicalDeviceDetails.maxSamplingCount = VK_SAMPLE_COUNT_64_BIT;
     }
-    else if (maxMSAA & VK_SAMPLE_COUNT_32_BIT){
+    else if (maxSamplingCount & VK_SAMPLE_COUNT_32_BIT){
         physicalDeviceDetails.maxSamplingCount = VK_SAMPLE_COUNT_32_BIT;
     }
-    else if (maxMSAA & VK_SAMPLE_COUNT_16_BIT){
+    else if (maxSamplingCount & VK_SAMPLE_COUNT_16_BIT){
         physicalDeviceDetails.maxSamplingCount = VK_SAMPLE_COUNT_16_BIT;
     }
-    else if (maxMSAA & VK_SAMPLE_COUNT_8_BIT){
+    else if (maxSamplingCount & VK_SAMPLE_COUNT_8_BIT){
         physicalDeviceDetails.maxSamplingCount = VK_SAMPLE_COUNT_8_BIT;
     }
-    else {
-        fprintf(stderr, "Failed to find a suitable Max Sample Count\n");
-        exit(EXIT_FAILURE);
+    else if (maxSamplingCount & VK_SAMPLE_COUNT_4_BIT){
+        physicalDeviceDetails.maxSamplingCount = VK_SAMPLE_COUNT_4_BIT;
     }
+    else if (maxSamplingCount & VK_SAMPLE_COUNT_2_BIT){
+        physicalDeviceDetails.maxSamplingCount = VK_SAMPLE_COUNT_2_BIT;
+    }
+    else {
+        physicalDeviceDetails.maxSamplingCount = VK_SAMPLE_COUNT_1_BIT;
+    }
+
+    #ifndef NDEBUG
+    printf("Max Sampling Count: %d\n", physicalDeviceDetails.maxSamplingCount);
+    #endif
 
     return physicalDeviceDetails;
 }

@@ -71,7 +71,7 @@ typedef struct {
 
 typedef struct {
     VkImage handle;
-    VkDeviceMemory memory;
+    VmaAllocation alloc;
     VkImageView view;
     VkExtent2D extent;
     VkFormat format;
@@ -99,7 +99,7 @@ typedef struct {
     FrameControllers *frameControllers;//free
     Image texture;
     VkSampler textureSampler;
-    Image depthBuffer;
+    Image depthImage;
     Image samplingImage;
 } VulkanState;
 
