@@ -4,12 +4,10 @@
 #include "int.h"
 #include "vkstate.h"
 
-#define VERTEX_ATTRIBUTE_COUNT 3
+#define VERTEX_ATTRIBUTE_COUNT 1
 
 typedef struct Vertex{
-    vec3 pos;
-    vec3 colour;
-    vec2 texCoord;
+    vec4 position;
 } Vertex;
 
 typedef struct VertexInputAttributes{

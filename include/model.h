@@ -6,7 +6,8 @@ typedef struct Model{
     u32 verticesCount;
     Vertex *vertices;
     u32 indicesCount;
-    u32 *indices;
+    u16 *indices;
 } Model;
 
 Model loadModel(const char *filePath);
+void freeModel(Model *model);

@@ -21,18 +21,15 @@ VertexInputAttributes getVertexInputAttributes(){
 
     attributes.descriptions[0].binding = 0;
     attributes.descriptions[0].location = 0;
-    attributes.descriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attributes.descriptions[0].offset = offsetof(Vertex, pos);
+    attributes.descriptions[0].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+    attributes.descriptions[0].offset = offsetof(Vertex, position);
 
+/*
     attributes.descriptions[1].binding = 0;
     attributes.descriptions[1].location = 1;
-    attributes.descriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attributes.descriptions[1].offset = offsetof(Vertex, colour);
-
-    attributes.descriptions[2].binding = 0;
-    attributes.descriptions[2].location = 2;
-    attributes.descriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-    attributes.descriptions[2].offset = offsetof(Vertex, texCoord);
+    attributes.descriptions[1].format = VK_FORMAT_R32G32_SFLOAT;
+    attributes.descriptions[1].offset = offsetof(Vertex, texCoord);
+*/
 
     return attributes;
 }

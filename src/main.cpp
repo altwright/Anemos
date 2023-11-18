@@ -3,6 +3,7 @@
 #include "window.h"
 #include "config.h"
 #include "vkstate.h"
+#include "model.h"
 
 int main(int, char**){
     UserConfig userConfig = {};
@@ -19,10 +20,13 @@ int main(int, char**){
 
     VulkanState vk = initVulkanState(&window, &userConfig);
 
+    Model model = loadModel("./models/cube.glb");
+
     while (!glfwWindowShouldClose(window.handle)){
         glfwPollEvents();
     }
 
+    freeModel(&model);
     destroyWindow(&window);
     destroyVulkanState(&vk);
 

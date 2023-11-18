@@ -3,8 +3,6 @@
 #include <stdlib.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
-#define TINYOBJ_LOADER_C_IMPLEMENTATION
-#include "tinyobj_loader_c.h"
 #define CGLTF_IMPLEMENTATION
 #include "cgltf.h"
 #include "load.h"
