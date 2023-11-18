@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <algorithm>
+#include "vkattachment.h"
+#include "vk_mem_alloc.h"
 
 VkSurfaceKHR createSurface(VkInstance instance, GLFWwindow *window)
 {
@@ -167,4 +169,39 @@ void destroySwapchain(VkDevice device, SwapchainDetails *swapchain)
     free(swapchain->imageViews);
     free(swapchain->images);
     vkDestroySwapchainKHR(device, swapchain->handle, NULL);
+}
+
+void recreateSwapchain(
+    VmaAllocator allocator,
+    VkDevice device,
+    const PhysicalDeviceDetails *physicalDevice,
+    VkSurfaceKHR surface,
+    GLFWwindow *window,
+    VkRenderPass renderPass,
+    VkSampleCountFlagBits samplingCount,
+    SwapchainDetails *swapchain,
+    Image *depthImage,
+    Image *samplingImage,
+    Framebuffers *framebuffers)
+{
+    int width = 0, height = 0;
+    glfwGetFramebufferSize(window, &width, &height);
+    while (width == 0 || height == 0){
+        glfwGetFramebufferSize(window, &width, &height);
+        glfwWaitEvents();
+    }
+
+    vkDeviceWaitIdle(device);
+
+    destroySwapchain(device, swapchain);
+    *swapchain = createSwapchain(device, physicalDevice, surface, window);
+
+    vmaDestroyImage(allocator, samplingImage->handle, samplingImage->alloc);
+    *samplingImage = createSamplingImage(allocator, device, swapchain->format, swapchain->extent, samplingCount);
+
+    vmaDestroyImage(allocator, depthImage->handle, depthImage->alloc);
+    *depthImage = createDepthImage(allocator, device, physicalDevice->handle, swapchain->extent, samplingCount);
+
+    destroyFramebuffers(device, framebuffers);
+    *framebuffers = createFramebuffers(device, renderPass, swapchain, depthImage->view, samplingImage->view);
 }

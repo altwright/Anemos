@@ -52,16 +52,22 @@ VulkanState initVulkanState(Window *window, const UserConfig *config)
         vk.device,
         vk.renderPass,
         vk.physicalDevice.maxSamplingCount);
-    vk.graphicsCommandPool = createCommandPool(
-        vk.device, 
-        vk.physicalDevice.queueFamilyIndices.graphicsQueue, 
-        VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
+
+    vk.deviceBuffer = createDeviceBuffer(vk.allocator, 1 << 28);
+    vk.stagingBuffer = createStagingBuffer(vk.allocator, 1 << 28);
+
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
+        vk.frameSyncers[i] = createFrameSynchroniser(vk.device);
+        vk.graphicsCmdPools[i] = createCommandPool(
+            vk.device, 
+            vk.physicalDevice.queueFamilyIndices.graphicsQueue, 
+            VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
+    }
+
     vk.transferCommandPool = createCommandPool(
         vk.device, 
         vk.physicalDevice.queueFamilyIndices.transferQueue, 
         VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
-    vk.deviceBuffer = createDeviceBuffer(vk.allocator, 1 << 28);
-    vk.stagingBuffer = createStagingBuffer(vk.allocator, 1 << 28);
 
     return vk;
 }
@@ -72,7 +78,12 @@ void destroyVulkanState(VulkanState *vk)
     vmaDestroyBuffer(vk->allocator, vk->deviceBuffer.handle, vk->deviceBuffer.alloc);
 
     vkDestroyCommandPool(vk->device, vk->transferCommandPool, NULL);
-    vkDestroyCommandPool(vk->device, vk->graphicsCommandPool, NULL);
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
+        vkDestroyCommandPool(vk->device, vk->graphicsCmdPools[i], NULL);
+        vkDestroySemaphore(vk->device, vk->frameSyncers[i].imageAvailable, NULL);
+        vkDestroySemaphore(vk->device, vk->frameSyncers[i].renderFinished, NULL);
+        vkDestroyFence(vk->device, vk->frameSyncers[i].inFlight, NULL);
+    }
 
     vkDestroyPipeline(vk->device, vk->graphicsPipeline.handle, NULL);
     vkDestroyPipelineLayout(vk->device, vk->graphicsPipeline.layout, NULL);

@@ -2,12 +2,7 @@
 #include <vulkan/vulkan.h>
 #include "vkstate.h"
 #include "int.h"
-
-typedef struct CommandBufferResources{
-    VkDevice device;
-    VkCommandPool commandPool;
-    VkQueue queue;
-} CommandBufferResources;
+#include "vkshader.h"
 
 VkCommandPool createCommandPool(VkDevice device, uint32_t queueIndex, VkCommandPoolCreateFlags createFlags);
 void recordDrawCommand(
@@ -15,12 +10,11 @@ void recordDrawCommand(
     VkRenderPass renderPass, 
     VkFramebuffer framebuffer, 
     PipelineDetails graphicsPipeline,
-    const SwapchainDetails *swapchainDetails,
-    VkDescriptorSet descriptorSet,
-    Buffer vertexBuffer,
+    VkExtent2D renderArea,
+    PushConstant pushConstant,
+    VkBuffer deviceBuffer,
     VkDeviceSize vertexBufferOffset,
     u32 vertexCount,
-    Buffer indexBuffer,
     VkDeviceSize indexBufferOffset,
     u32 indexCount);
 void submitDrawCommand(
@@ -40,3 +34,5 @@ void submitCommandBuffer(
     VkCommandPool cmdPool, 
     VkCommandBuffer cmdBuffer, 
     VkQueue queue);
+FrameSynchroniser createFrameSynchroniser(VkDevice device);
+VkCommandBuffer createPrimaryCommandBuffer(VkDevice device, VkCommandPool cmdPool);

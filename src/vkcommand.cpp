@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include "vkstate.h"
 #include "int.h"
+#include "vkshader.h"
 
 VkCommandPool createCommandPool(VkDevice device, uint32_t queueIndex, VkCommandPoolCreateFlags createFlags){
     VkCommandPoolCreateInfo poolInfo{};
@@ -25,25 +26,23 @@ void recordDrawCommand(
     VkRenderPass renderPass, 
     VkFramebuffer framebuffer, 
     PipelineDetails graphicsPipeline,
-    const SwapchainDetails *swapchainDetails,
-    VkDescriptorSet descriptorSet,
-    Buffer vertexBuffer,
+    VkExtent2D renderArea,
+    PushConstant pushConstant,
+    VkBuffer deviceBuffer,
     VkDeviceSize vertexBufferOffset,
     u32 vertexCount,
-    Buffer indexBuffer,
     VkDeviceSize indexBufferOffset,
     u32 indexCount)
 {
 
-    VkCommandBufferBeginInfo beginInfo{};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    VkCommandBufferBeginInfo beginInfo = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
     
     if (vkBeginCommandBuffer(commandBuffer, &beginInfo)){//Implicit reset of buffer
         printf("Failed to begin recording Command Buffer\n");
         exit(EXIT_FAILURE);
     }
 
-    VkRenderPassBeginInfo renderPassBeginInfo{};
+    VkRenderPassBeginInfo renderPassBeginInfo = {};
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassBeginInfo.renderPass = renderPass;
     renderPassBeginInfo.framebuffer = framebuffer;
@@ -51,7 +50,7 @@ void recordDrawCommand(
     //The render area defines where shader loads and stores will take place. 
     //The pixels outside this region will have undefined values. It should 
     //match the size of the attachments for best performance.
-    renderPassBeginInfo.renderArea.extent = swapchainDetails->extent;
+    renderPassBeginInfo.renderArea.extent = renderArea;
     //Note that the order of clearValues should be identical to the order of your attachments.
     u32 attachmentCount = 2;
     VkClearValue clearValues[attachmentCount] = {};
@@ -64,24 +63,26 @@ void recordDrawCommand(
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.handle);
 
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer.handle, &vertexBufferOffset);
+    vkCmdPushConstants(commandBuffer, graphicsPipeline.layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstant), &pushConstant);
 
-    vkCmdBindIndexBuffer(commandBuffer, indexBuffer.handle, indexBufferOffset, VK_INDEX_TYPE_UINT32);
+    vkCmdBindVertexBuffers(commandBuffer, 0, 1, &deviceBuffer, &vertexBufferOffset);
+
+    vkCmdBindIndexBuffer(commandBuffer, deviceBuffer, indexBufferOffset, VK_INDEX_TYPE_UINT16);
 
     VkViewport viewport{};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
-    viewport.width = swapchainDetails->extent.width;
-    viewport.height = swapchainDetails->extent.height;
+    viewport.width = renderArea.width;
+    viewport.height = renderArea.height;
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
     VkRect2D scissor{};
     scissor.offset = {0, 0};
-    scissor.extent = swapchainDetails->extent;
+    scissor.extent = renderArea;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-
+    /*
     vkCmdBindDescriptorSets(
         commandBuffer, 
         VK_PIPELINE_BIND_POINT_GRAPHICS, 
@@ -92,13 +93,13 @@ void recordDrawCommand(
         0, 
         NULL
     );
-
+    */
     vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
 
     vkCmdEndRenderPass(commandBuffer);
 
     if (vkEndCommandBuffer(commandBuffer)){
-        printf("Failed to end recording of Command Buffer\n");
+        fprintf(stderr, "Failed to end recording of Command Buffer\n");
         exit(EXIT_FAILURE);
     }
 }
@@ -193,4 +194,43 @@ void submitCommandBuffer(
     }
 
     vkFreeCommandBuffers(device, cmdPool, 1, &cmdBuffer);
+}
+
+FrameSynchroniser createFrameSynchroniser(VkDevice device)
+{
+    FrameSynchroniser frameSyncer = {};
+
+    VkSemaphoreCreateInfo semaphoreInfo{};
+    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    VkFenceCreateInfo fenceInfo{};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;//Starts in the signalled state
+
+    if (vkCreateSemaphore(device, &semaphoreInfo, NULL, &frameSyncer.imageAvailable) ||
+        vkCreateSemaphore(device, &semaphoreInfo, NULL, &frameSyncer.renderFinished) ||
+        vkCreateFence(device, &fenceInfo, NULL, &frameSyncer.inFlight))
+    {
+        fprintf(stderr, "Failed to create Frame Synchroniser members\n");
+        exit(EXIT_FAILURE);
+    }
+
+    return frameSyncer;
+}
+
+VkCommandBuffer createPrimaryCommandBuffer(VkDevice device, VkCommandPool cmdPool)
+{
+    VkCommandBufferAllocateInfo allocInfo = {};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandPool = cmdPool;
+    allocInfo.commandBufferCount = 1;
+
+    VkCommandBuffer cmdBuffer = NULL;
+    if (vkAllocateCommandBuffers(device, &allocInfo, &cmdBuffer)){
+        fprintf(stderr, "Failed to allocated Single Use Command Buffer\n");
+        exit(EXIT_FAILURE);
+    }
+
+    return cmdBuffer;
 }

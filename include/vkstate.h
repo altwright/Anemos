@@ -35,7 +35,7 @@ typedef struct {
     VkSemaphore imageAvailable;
     VkSemaphore renderFinished;
     VkFence inFlight;
-} FrameSynchronisers;
+} FrameSynchroniser;
 
 typedef struct {
     VkBuffer handle;
@@ -86,9 +86,9 @@ typedef struct {
     VkRenderPass renderPass;
     Framebuffers framebuffers;
     PipelineDetails graphicsPipeline;
-    VkCommandPool graphicsCommandPool;
+    VkCommandPool graphicsCmdPools[MAX_FRAMES_IN_FLIGHT];
     VkCommandPool transferCommandPool;
-    FrameSynchronisers frameSyncers[MAX_FRAMES_IN_FLIGHT];
+    FrameSynchroniser frameSyncers[MAX_FRAMES_IN_FLIGHT];
     Buffer deviceBuffer;
     Buffer stagingBuffer;
 } VulkanState;

@@ -20,3 +20,15 @@ SwapchainDetails createSwapchain(
     VkSurfaceKHR surface, 
     GLFWwindow *window);
 void destroySwapchain(VkDevice device, SwapchainDetails *swapchain);
+void recreateSwapchain(
+    VmaAllocator allocator,
+    VkDevice device,
+    const PhysicalDeviceDetails *physicalDevice,
+    VkSurfaceKHR surface,
+    GLFWwindow *window,
+    VkRenderPass renderPass,
+    VkSampleCountFlagBits samplingCount,
+    SwapchainDetails *swapchain,
+    Image *depthImage,
+    Image *samplingImage,
+    Framebuffers *framebuffers);

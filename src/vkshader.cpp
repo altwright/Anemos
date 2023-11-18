@@ -30,6 +30,42 @@ VkDescriptorPool createDescriptorPool(VkDevice device, u32 numFramesInFlight)
     return descriptorPool;
 }
 
+PushConstant updatePushConstant(VkExtent2D renderArea)
+{
+    static const s64 startTimeNs = SEC_TO_NS(START_TIME.tv_sec) + START_TIME.tv_nsec;
+
+    timespec currentTime = {};
+    if (clock_gettime(TIMING_CLOCK, &currentTime)){
+        perror("Failed to get Current Time\n");
+        exit(EXIT_FAILURE);
+    }
+
+    s64 currentTimeNs = SEC_TO_NS(currentTime.tv_sec) + currentTime.tv_nsec;
+    s64 timeDiffNs = currentTimeNs - startTimeNs;
+    float rotationRadians = (glm_rad(90.0f) * timeDiffNs)/SEC_TO_NS(1);
+
+    mat4 model = {};
+    glm_mat4_identity(model);
+    vec3 rotationAxis = {0.0f, 0.0f, 1.0f};
+    glm_rotate(model, rotationRadians, rotationAxis);
+
+    vec3 eye = {2.0f, 2.0f, 2.0f};
+    vec3 centre = {0.0f, 0.0f, 0.0f};
+    vec3 up = {0.0f, 0.0f, 1.0f};
+    mat4 view = {};
+    glm_lookat(eye, centre, up, view);
+
+    mat4 projection = {};
+    glm_perspective(glm_rad(45.0f), renderArea.width / (float)renderArea.height, 0.1f, 10.0f, projection);
+    projection[1][1] *= -1;//Originally designed for OpenGL, so must be inverted
+
+    PushConstant pc = {};
+    glm_mat4_mul_sse2(view, model, pc.mvp);
+    glm_mat4_mul_sse2(projection, pc.mvp, pc.mvp);
+   
+    return pc;
+}
+
 void updateUniformBuffer(void *mappedUniformBuffer, VkExtent2D swapchainExtent)
 {
     static const s64 startTimeNs = SEC_TO_NS(START_TIME.tv_sec) + START_TIME.tv_nsec;
