@@ -34,9 +34,9 @@ VkResult presentSwapchain(
     VkSemaphore waitSemaphore,
     VkSwapchainKHR swapchain,
     uint32_t swapchainImageIndex);
-VkCommandBuffer beginSingleTimeCommand(VkDevice device, VkCommandPool transientCommandPool);
-void submitSingleTimeCommand(
+VkCommandBuffer beginSingleTimeCommandBuffer(VkDevice device, VkCommandPool cmdPool);
+void submitCommandBuffer(
     VkDevice device, 
-    VkCommandPool transientCommandPool, 
-    VkCommandBuffer commandBuffer, 
+    VkCommandPool cmdPool, 
+    VkCommandBuffer cmdBuffer, 
     VkQueue queue);

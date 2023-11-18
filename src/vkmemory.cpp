@@ -37,56 +37,6 @@ u32 findVkMemoryType(u32 typeFilter, const VkPhysicalDeviceMemoryProperties *mem
 }
 
 /*
-Buffer createBuffer(
-    VkDevice device,
-    const PhysicalDeviceDetails *physicalDevice,
-    VkDeviceSize bufferSize, 
-    VkBufferUsageFlags bufferUsage,
-    VkMemoryPropertyFlags desiredProperties)
-{
-    VkBufferCreateInfo bufferInfo{};
-    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    bufferInfo.size = bufferSize;
-    bufferInfo.usage = bufferUsage;
-    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-    Buffer buffer = {};
-    if (vkCreateBuffer(device, &bufferInfo, NULL, &buffer.handle)){
-        fprintf(stderr, "Failed to allocate Buffer\n");
-        exit(EXIT_FAILURE);
-    }
-
-    VkMemoryRequirements memRequirements = {};
-    vkGetBufferMemoryRequirements(device, buffer.handle, &memRequirements);
-
-    VkMemoryAllocateInfo allocInfo = {};
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = findVkMemoryType(
-        memRequirements.memoryTypeBits, 
-        &physicalDevice->memProperties, 
-        desiredProperties);
-
-    if (allocInfo.memoryTypeIndex == UINT32_MAX){
-        fprintf(stderr, "Failed to find suitable memory type for Buffer\n");
-        exit(EXIT_FAILURE);
-    }
-
-    if (vkAllocateMemory(device, &allocInfo, NULL, &buffer.memory)){
-        fprintf(stderr, "Failed to allocate memory for Buffer\n");
-        exit(EXIT_FAILURE);
-    }
-
-    if (vkBindBufferMemory(device, buffer.handle, buffer.memory, 0)){
-        fprintf(stderr, "Failed to bind memory to Buffer\n");
-        exit(EXIT_FAILURE);
-    }
-
-    buffer.size = bufferInfo.size;
-    buffer.physicalSize = memRequirements.size;
-    return buffer;
-}
-
 void copyBufferRegion(
     VkDevice device,
     VkCommandPool transientCommandPool,

@@ -17,14 +17,15 @@ Model loadModel(const char *filePath)
     cgltf_attribute positionAttr = {};
     cgltf_attribute texCoordAttr = {};
 
-    for (size_t i = 0; i < data->meshes[0].primitives[0].attributes_count; i++){
-        if (data->meshes[0].primitives[0].attributes[i].type == cgltf_attribute_type_position){
-            positionAttr = data->meshes[0].primitives[0].attributes[i];
+    cgltf_primitive primitive = data->meshes[0].primitives[0];
+    for (size_t i = 0; i < primitive.attributes_count; i++){
+        if (primitive.attributes[i].type == cgltf_attribute_type_position){
+            positionAttr = primitive.attributes[i];
             break;
         }
 
-        if (data->meshes[0].primitives[0].attributes[i].type == cgltf_attribute_type_texcoord){
-            texCoordAttr = data->meshes[0].primitives[0].attributes[i];
+        if (primitive.attributes[i].type == cgltf_attribute_type_texcoord){
+            texCoordAttr = primitive.attributes[i];
             break;
         }
     }

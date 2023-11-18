@@ -146,16 +146,16 @@ VkResult presentSwapchain(
     return vkQueuePresentKHR(presentQueue, &presentInfo);
 }
 
-VkCommandBuffer beginSingleTimeCommand(VkDevice device, VkCommandPool transientCommandPool)
+VkCommandBuffer beginSingleTimeCommandBuffer(VkDevice device, VkCommandPool cmdPool)
 {
     VkCommandBufferAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandPool = transientCommandPool;
+    allocInfo.commandPool = cmdPool;
     allocInfo.commandBufferCount = 1;
 
-    VkCommandBuffer commandBuffer = NULL;
-    if (vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer)){
+    VkCommandBuffer cmdBuffer = NULL;
+    if (vkAllocateCommandBuffers(device, &allocInfo, &cmdBuffer)){
         fprintf(stderr, "Failed to allocated Single Use Command Buffer\n");
         exit(EXIT_FAILURE);
     }
@@ -164,26 +164,26 @@ VkCommandBuffer beginSingleTimeCommand(VkDevice device, VkCommandPool transientC
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-    vkBeginCommandBuffer(commandBuffer, &beginInfo);
+    vkBeginCommandBuffer(cmdBuffer, &beginInfo);
 
-    return commandBuffer;
+    return cmdBuffer;
 }
 
-void submitSingleTimeCommand(
+void submitCommandBuffer(
     VkDevice device, 
-    VkCommandPool transientCommandPool, 
-    VkCommandBuffer commandBuffer, 
+    VkCommandPool cmdPool, 
+    VkCommandBuffer cmdBuffer, 
     VkQueue queue)
 {
-    vkEndCommandBuffer(commandBuffer);
+    vkEndCommandBuffer(cmdBuffer);
 
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffer;
+    submitInfo.pCommandBuffers = &cmdBuffer;
 
     if (vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE)){
-        fprintf(stderr, "Failed to submit single time command to Queue\n");
+        fprintf(stderr, "Failed to submit Command Buffer to Queue\n");
         exit(EXIT_FAILURE);
     }
 
@@ -192,5 +192,5 @@ void submitSingleTimeCommand(
         exit(EXIT_FAILURE);
     }
 
-    vkFreeCommandBuffers(device, transientCommandPool, 1, &commandBuffer);
+    vkFreeCommandBuffers(device, cmdPool, 1, &cmdBuffer);
 }

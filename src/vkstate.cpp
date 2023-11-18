@@ -61,12 +61,14 @@ VulkanState initVulkanState(Window *window, const UserConfig *config)
         vk.physicalDevice.queueFamilyIndices.transferQueue, 
         VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
     vk.deviceBuffer = createDeviceBuffer(vk.allocator, 1 << 28);
+    vk.stagingBuffer = createStagingBuffer(vk.allocator, 1 << 28);
 
     return vk;
 }
 
 void destroyVulkanState(VulkanState *vk)
 {
+    vmaDestroyBuffer(vk->allocator, vk->stagingBuffer.handle, vk->stagingBuffer.alloc);
     vmaDestroyBuffer(vk->allocator, vk->deviceBuffer.handle, vk->deviceBuffer.alloc);
 
     vkDestroyCommandPool(vk->device, vk->transferCommandPool, NULL);

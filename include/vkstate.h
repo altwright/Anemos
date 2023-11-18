@@ -90,6 +90,7 @@ typedef struct {
     VkCommandPool transferCommandPool;
     FrameSynchronisers frameSyncers[MAX_FRAMES_IN_FLIGHT];
     Buffer deviceBuffer;
+    Buffer stagingBuffer;
 } VulkanState;
 
 VulkanState initVulkanState(Window *window, const UserConfig *config);
