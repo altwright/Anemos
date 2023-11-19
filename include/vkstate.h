@@ -45,7 +45,6 @@ typedef struct {
 
 typedef struct {
     VkPhysicalDevice handle;
-    VkPhysicalDeviceMemoryProperties memProperties;
     VkPhysicalDeviceProperties deviceProperties;
     QueueFamilyIndices queueFamilyIndices;
     VkSampleCountFlagBits maxSamplingCount;

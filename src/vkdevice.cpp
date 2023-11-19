@@ -213,7 +213,6 @@ PhysicalDeviceDetails selectPhysicalDevice(VkInstance instance, VkSurfaceKHR sur
 
     PhysicalDeviceDetails physicalDeviceDetails = {};
     physicalDeviceDetails.handle = selectedDevice;
-    vkGetPhysicalDeviceMemoryProperties(physicalDeviceDetails.handle, &physicalDeviceDetails.memProperties);
     vkGetPhysicalDeviceProperties(physicalDeviceDetails.handle, &physicalDeviceDetails.deviceProperties);
     physicalDeviceDetails.queueFamilyIndices = findQueueFamilyIndices(physicalDeviceDetails.handle, surface);
 

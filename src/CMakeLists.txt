@@ -17,4 +17,6 @@ target_sources(anemos PRIVATE
     vkattachment.cpp
     vkshader.cpp
     vkbuffer.cpp
+    input.cpp
+    controls.cpp
 )

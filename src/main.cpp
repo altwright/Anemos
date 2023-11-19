@@ -9,6 +9,8 @@
 #include "vkswapchain.h"
 #include "vkcommand.h"
 #include "vkshader.h"
+#include "input.h"
+#include "controls.h"
 
 int main(int, char**){
     UserConfig userConfig = {};
@@ -17,11 +19,23 @@ int main(int, char**){
         exit(EXIT_FAILURE);
     }
 
+    InputHandler inputHandler = createInputHandler();
     Window window = {};
-    if (!createWindow(userConfig.window.width, userConfig.window.height, TITLE, &window)){
+    if (!initWindow(
+        TITLE, 
+        userConfig.window.width, 
+        userConfig.window.height, 
+        &inputHandler, 
+        &window))
+    {
         fprintf(stderr, "Failed to create GLFW window!\n");
         exit(EXIT_FAILURE);
     }
+
+    CameraControlState controlState = {};
+    inputHandler.ctx = &controlState;
+    inputHandler.w = &cam_handleKeyW;
+    inputHandler.s = &cam_handleKeyS;
 
     VulkanState vk = initVulkanState(&window, &userConfig);
 

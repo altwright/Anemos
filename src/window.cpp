@@ -12,7 +12,12 @@ static void framebufferResizeCallback(GLFWwindow *handle, int width, int height)
         printf("Failed to retrieve GLFW User Pointer\n");
 }
 
-bool createWindow(size_t width, size_t height, const char *title, Window *window)
+bool initWindow(
+    const char *title, 
+    size_t width, 
+    size_t height, 
+    InputHandler *inputHandler, 
+    Window *window)
 {
     if (!glfwInit()) {
         fprintf(stderr, "Could not initialise GLFW!\n");
@@ -31,10 +36,13 @@ bool createWindow(size_t width, size_t height, const char *title, Window *window
 
     glfwSetWindowUserPointer(handle, window);
     glfwSetFramebufferSizeCallback(handle, framebufferResizeCallback);
+    glfwSetInputMode(handle, GLFW_STICKY_KEYS, GLFW_TRUE);
+    glfwSetKeyCallback(handle, keyInputCallback);
 
     window->handle = handle;
     window->width = width;
     window->height = height;
+    window->inputHandler = inputHandler;
     window->resizing = false;
 
     return true;
