@@ -2,6 +2,7 @@
 #define CGLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <cglm/cglm.h>
 #include <vulkan/vulkan.h>
+#include "controls.h"
 
 /*
 Vulkan expects the data in your structure to be aligned in memory in a specific way, for example:
@@ -23,4 +24,4 @@ typedef struct {
 } PushConstant;
 
 VkShaderModule createShaderModule(VkDevice device, uint32_t *code, size_t numBytes);
-PushConstant updatePushConstant(VkExtent2D renderArea);
+PushConstant updatePushConstant(VkExtent2D renderArea, CameraControls camControls);

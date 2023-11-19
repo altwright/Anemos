@@ -32,8 +32,8 @@ int main(int, char**){
         exit(EXIT_FAILURE);
     }
 
-    CameraControlState controlState = {};
-    inputHandler.ctx = &controlState;
+    CameraControls camControls = {3.0f};
+    inputHandler.ctx = &camControls;
     inputHandler.w = &cam_handleKeyW;
     inputHandler.s = &cam_handleKeyS;
 
@@ -100,7 +100,7 @@ int main(int, char**){
 
         vkResetCommandPool(vk.device, vk.graphicsCmdPools[currentFrame], 0);
 
-        PushConstant pushConstant = updatePushConstant(vk.swapchain.extent);
+        PushConstant pushConstant = updatePushConstant(vk.swapchain.extent, camControls);
 
         recordDrawCommand(
             graphicsCmdBuffers[currentFrame],

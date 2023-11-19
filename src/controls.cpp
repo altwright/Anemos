@@ -5,14 +5,15 @@
 
 void cam_handleKeyW(void *ctx, int action, int mods)
 {
-    CameraControlState *camState = (CameraControlState*)ctx;
-    camState->count++;
-    printf("Count: %d\n", camState->count);
+    CameraControls *camState = (CameraControls*)ctx;
+    
+    camState->originDist -= 0.1f;
 }
 
 void cam_handleKeyS(void *ctx, int action, int mods)
 {
-    CameraControlState *camState = (CameraControlState*)ctx;
-    camState->count--;
-    printf("Count: %d\n", camState->count);
+    CameraControls *camState = (CameraControls*)ctx;
+
+    camState->originDist += 0.1f;
+    
 }

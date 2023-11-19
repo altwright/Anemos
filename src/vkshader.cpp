@@ -30,7 +30,7 @@ VkDescriptorPool createDescriptorPool(VkDevice device, u32 numFramesInFlight)
     return descriptorPool;
 }
 
-PushConstant updatePushConstant(VkExtent2D renderArea)
+PushConstant updatePushConstant(VkExtent2D renderArea, CameraControls camControls)
 {
     static const s64 startTimeNs = SEC_TO_NS(START_TIME.tv_sec) + START_TIME.tv_nsec;
 
@@ -49,7 +49,8 @@ PushConstant updatePushConstant(VkExtent2D renderArea)
     vec3 rotationAxis = {0.0f, 0.0f, 1.0f};
     glm_rotate(pc.mvp, rotationRadians, rotationAxis);
 
-    vec3 eye = {3.0f, 3.0f, 3.0f};
+    float originDist = camControls.originDist;
+    vec3 eye = {originDist, originDist, originDist};
     vec3 centre = {0.0f, 0.0f, 0.0f};
     vec3 up = {0.0f, 0.0f, 1.0f};
     mat4 view = {};
