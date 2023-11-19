@@ -49,7 +49,7 @@ PushConstant updatePushConstant(VkExtent2D renderArea)
     vec3 rotationAxis = {0.0f, 0.0f, 1.0f};
     glm_rotate(model, rotationRadians, rotationAxis);
 
-    vec3 eye = {2.0f, 2.0f, 2.0f};
+    vec3 eye = {3.0f, 3.0f, 3.0f};
     vec3 centre = {0.0f, 0.0f, 0.0f};
     vec3 up = {0.0f, 0.0f, 1.0f};
     mat4 view = {};
@@ -60,8 +60,8 @@ PushConstant updatePushConstant(VkExtent2D renderArea)
     projection[1][1] *= -1;//Originally designed for OpenGL, so must be inverted
 
     PushConstant pc = {};
-    glm_mat4_mul_sse2(view, model, pc.mvp);
-    glm_mat4_mul_sse2(projection, pc.mvp, pc.mvp);
+    glm_mat4_mul(view, model, pc.mvp);
+    glm_mat4_mul(projection, pc.mvp, pc.mvp);
    
     return pc;
 }

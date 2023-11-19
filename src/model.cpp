@@ -37,15 +37,14 @@ Model loadModel(const char *filePath)
         exit(EXIT_FAILURE);
     }
 
-    float *verticesBuffer = (float*)data->bin;
     cgltf_size verticesOffset = positionAttr.data->buffer_view->offset;
+    float *verticesBuffer = (float*)((unsigned char*)data->bin + verticesOffset);
     for (size_t i = 0; i < model.verticesCount; i++){
         model.vertices[i] = {
             .position = {
-                verticesBuffer[verticesOffset+3*i], 
-                verticesBuffer[verticesOffset+3*i+1], 
-                verticesBuffer[verticesOffset+3*i+2], 
-                1.0f
+                verticesBuffer[3*i], 
+                verticesBuffer[3*i+1], 
+                verticesBuffer[3*i+2], 
             }
         };
     }
@@ -58,10 +57,10 @@ Model loadModel(const char *filePath)
     }
 
     cgltf_accessor *indicesAccessor = data->meshes[0].primitives[0].indices;
-    u16 *indicesBuffer = (u16*)data->bin;
     cgltf_size indicesOffset = indicesAccessor->buffer_view->offset;
+    u16*indicesBuffer = (u16*)((unsigned char*)data->bin + indicesOffset);
     for (size_t i = 0; i < model.indicesCount; i++){
-        model.indices[i] = indicesBuffer[indicesOffset + i];
+        model.indices[i] = indicesBuffer[i];
     }
 
     cgltf_free(data);

@@ -7,7 +7,7 @@
 #define VERTEX_ATTRIBUTE_COUNT 1
 
 typedef struct Vertex{
-    vec4 position;
+    vec3 position;
 } Vertex;
 
 typedef struct VertexInputAttributes{

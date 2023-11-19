@@ -196,9 +196,11 @@ void recreateSwapchain(
     destroySwapchain(device, swapchain);
     *swapchain = createSwapchain(device, physicalDevice, surface, window);
 
+    vkDestroyImageView(device, samplingImage->view, NULL);
     vmaDestroyImage(allocator, samplingImage->handle, samplingImage->alloc);
     *samplingImage = createSamplingImage(allocator, device, swapchain->format, swapchain->extent, samplingCount);
 
+    vkDestroyImageView(device, depthImage->view, NULL);
     vmaDestroyImage(allocator, depthImage->handle, depthImage->alloc);
     *depthImage = createDepthImage(allocator, device, physicalDevice->handle, swapchain->extent, samplingCount);
 
