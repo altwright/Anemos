@@ -5,13 +5,14 @@
 #include "vkshader.h"
 
 VkCommandPool createCommandPool(VkDevice device, uint32_t queueIndex, VkCommandPoolCreateFlags createFlags);
-void recordDrawCommand(
+void recordModelDrawCommand(
     VkCommandBuffer commandBuffer, 
     VkRenderPass renderPass, 
     VkFramebuffer framebuffer, 
     PipelineDetails graphicsPipeline,
     VkExtent2D renderArea,
     PushConstant pushConstant,
+    VkDescriptorSet descriptorSet,
     VkBuffer deviceBuffer,
     VkDeviceSize vertexBufferOffset,
     u32 vertexCount,

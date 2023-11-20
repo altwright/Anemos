@@ -11,4 +11,5 @@ VkRenderPass createRenderPass(
 PipelineDetails createGraphicsPipeline(
     VkDevice device, 
     VkRenderPass renderPass, 
+    VkDescriptorSetLayout setLayout,
     VkSampleCountFlagBits samplingCount);

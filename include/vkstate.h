@@ -51,18 +51,6 @@ typedef struct {
 } PhysicalDeviceDetails;
 
 typedef struct {
-    VkDescriptorSet handle;
-    Buffer buffer;
-    void* mappedBuffer;
-} DescriptorSet;
-
-typedef struct {
-    DescriptorSet *sets;//free
-    size_t setsCount;
-    VkDescriptorSetLayout layout;
-} Descriptors;
-
-typedef struct {
     VkImage handle;
     VmaAllocation alloc;
     VkImageView view;
@@ -84,12 +72,15 @@ typedef struct {
     Image samplingImage;
     VkRenderPass renderPass;
     Framebuffers framebuffers;
+    VkDescriptorSetLayout descriptorSetLayout;
+    VkDescriptorPool descriptorPool;
     PipelineDetails graphicsPipeline;
     VkCommandPool graphicsCmdPools[MAX_FRAMES_IN_FLIGHT];
     VkCommandPool transferCommandPool;
     FrameSynchroniser frameSyncers[MAX_FRAMES_IN_FLIGHT];
     Buffer deviceBuffer;
     Buffer stagingBuffer;
+    Buffer uniformBuffer;
 } VulkanState;
 
 VulkanState initVulkanState(Window *window, const UserConfig *config);

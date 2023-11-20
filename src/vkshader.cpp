@@ -1,25 +1,43 @@
 #include "vkshader.h"
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "timing.h"
 #include "int.h"
+#include "vkstate.h"
 
-VkDescriptorPool createDescriptorPool(VkDevice device, u32 numFramesInFlight)
+VkDescriptorSetLayout createDescriptorSetLayout(VkDevice device)
+{
+    VkDescriptorSetLayoutBinding ubBinding = {};
+    ubBinding.binding = 0;
+    ubBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    ubBinding.descriptorCount = 1;//Specifies num elements in array
+    ubBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+    VkDescriptorSetLayoutCreateInfo layoutInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
+    layoutInfo.bindingCount = 1;
+    layoutInfo.pBindings = &ubBinding;
+
+    VkDescriptorSetLayout layout = {};
+    if (vkCreateDescriptorSetLayout(device, &layoutInfo, NULL, &layout)){
+        fprintf(stderr, "Failed to create Descriptor Set Layout\n");
+        exit(EXIT_FAILURE);
+    }
+
+    return layout;
+}
+
+VkDescriptorPool createDescriptorPool(VkDevice device)
 {
     VkDescriptorPoolSize ubPoolSize = {};
     ubPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    ubPoolSize.descriptorCount = numFramesInFlight;//Max descriptors
-
-    VkDescriptorPoolSize samplerPoolSize = {};
-    samplerPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    samplerPoolSize.descriptorCount = numFramesInFlight;
-
-    VkDescriptorPoolSize poolSizes[2] = {ubPoolSize, samplerPoolSize};
+    ubPoolSize.descriptorCount = MAX_FRAMES_IN_FLIGHT;//Max descriptors, shared between the sets
 
     VkDescriptorPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    poolInfo.poolSizeCount = 2;
-    poolInfo.pPoolSizes = poolSizes;
-    poolInfo.maxSets = numFramesInFlight;
+    poolInfo.poolSizeCount = 1;
+    poolInfo.pPoolSizes = &ubPoolSize;
+    poolInfo.maxSets = MAX_FRAMES_IN_FLIGHT;
 
     VkDescriptorPool descriptorPool = NULL;
     if (vkCreateDescriptorPool(device, &poolInfo, NULL, &descriptorPool)){
@@ -30,40 +48,29 @@ VkDescriptorPool createDescriptorPool(VkDevice device, u32 numFramesInFlight)
     return descriptorPool;
 }
 
-PushConstant updatePushConstant(VkExtent2D renderArea, CameraControls camControls)
+DescriptorSets allocateDescriptorSets(VkDevice device, VkDescriptorSetLayout layout, VkDescriptorPool pool)
 {
-    static const s64 startTimeNs = SEC_TO_NS(START_TIME.tv_sec) + START_TIME.tv_nsec;
+    VkDescriptorSetLayout layouts[MAX_FRAMES_IN_FLIGHT] = {layout, layout};
 
-    timespec currentTime = {};
-    if (clock_gettime(TIMING_CLOCK, &currentTime)){
-        perror("Failed to get Current Time\n");
+    VkDescriptorSetAllocateInfo allocInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
+    allocInfo.descriptorPool = pool;
+    allocInfo.descriptorSetCount = MAX_FRAMES_IN_FLIGHT;
+    allocInfo.pSetLayouts = layouts;
+
+    DescriptorSets sets = {};
+    sets.layout = layout;
+    if (vkAllocateDescriptorSets(device, &allocInfo, sets.handles)){
+        fprintf(stderr, "Failed to allocate Descriptor Sets\n");
         exit(EXIT_FAILURE);
     }
 
-    s64 currentTimeNs = SEC_TO_NS(currentTime.tv_sec) + currentTime.tv_nsec;
-    s64 timeDiffNs = currentTimeNs - startTimeNs;
-    float rotationRadians = (glm_rad(90.0f) * timeDiffNs)/SEC_TO_NS(1);
+    return sets;
+}
 
-    PushConstant pc = {};
-    glm_mat4_identity(pc.mvp);
-    vec3 rotationAxis = {0.0f, 0.0f, 1.0f};
-    glm_rotate(pc.mvp, rotationRadians, rotationAxis);
-
-    float originDist = camControls.originDist;
-    vec3 eye = {originDist, originDist, originDist};
-    vec3 centre = {0.0f, 0.0f, 0.0f};
-    vec3 up = {0.0f, 0.0f, 1.0f};
-    mat4 view = {};
-    glm_lookat(eye, centre, up, view);
-
-    mat4 projection = {};
-    glm_perspective(glm_rad(45.0f), renderArea.width / (float)renderArea.height, 0.1f, 10.0f, projection);
-    projection[1][1] *= -1;//Originally designed for OpenGL, so must be inverted
-
-    glm_mat4_mul_sse2(view, pc.mvp, pc.mvp);
-    glm_mat4_mul_sse2(projection, pc.mvp, pc.mvp);
-   
-    return pc;
+void updateUniformBuffer(Buffer *uniformBuffer, VkDeviceSize offset, Model *model)
+{
+    unsigned char *mappedBuffer = (unsigned char*)uniformBuffer->info.pMappedData + offset;
+    memcpy(mappedBuffer, model->worldMatrix, sizeof(mat4));
 }
 
 void updateUniformBuffer(void *mappedUniformBuffer, VkExtent2D swapchainExtent)

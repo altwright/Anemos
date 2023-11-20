@@ -9,6 +9,9 @@ Buffer createDeviceBuffer(
 Buffer createStagingBuffer(
     VmaAllocator allocator,
     VkDeviceSize bufferSize);
+Buffer createUniformBuffer(
+    VmaAllocator allocator,
+    VkDeviceSize bufferSize);
 void copyToDeviceBuffer(
     size_t bytesCount,
     VkBuffer srcBuffer,

@@ -32,15 +32,14 @@ int main(int, char**){
         exit(EXIT_FAILURE);
     }
 
-    CameraControls camControls = {3.0f};
-    inputHandler.ctx = &camControls;
-    inputHandler.w = &cam_handleKeyW;
-    inputHandler.s = &cam_handleKeyS;
-
     VulkanState vk = initVulkanState(&window, &userConfig);
 
-    Model cube = loadModel("./models/cube.glb");
+    VkCommandBuffer graphicsCmdBuffers[MAX_FRAMES_IN_FLIGHT] = {};
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
+        graphicsCmdBuffers[i] = createPrimaryCommandBuffer(vk.device, vk.graphicsCmdPools[i]);
+    }
 
+    Model cube = loadModel("./models/cube.glb");
     size_t bytesCount = 0;
     unsigned char *mappedBuffer = (unsigned char*)vk.stagingBuffer.info.pMappedData;
     memcpy(mappedBuffer, cube.vertices, sizeof(Vertex)*cube.verticesCount);
@@ -48,7 +47,6 @@ int main(int, char**){
     mappedBuffer += bytesCount;
     memcpy(mappedBuffer, cube.indices, sizeof(u16)*cube.indicesCount);
     bytesCount += sizeof(u16)*cube.indicesCount;
-
     copyToDeviceBuffer(
         bytesCount, 
         vk.stagingBuffer.handle, 0, 
@@ -57,10 +55,36 @@ int main(int, char**){
         vk.transferCommandPool, 
         vk.transferQueue);
 
-    VkCommandBuffer graphicsCmdBuffers[MAX_FRAMES_IN_FLIGHT] = {};
+    CameraControls camControls = {
+        .position = {3.0f, 3.0f, 3.0f},
+        .focusPoint = {0.0f, 0.0f, 0.0f},
+        .up = {0.0f, 0.0f, 1.0f}};
+    inputHandler.ctx = &camControls;
+    inputHandler.w = &cam_handleKeyW;
+    inputHandler.a = &cam_handleKeyA;
+    inputHandler.s = &cam_handleKeyS;
+    inputHandler.d = &cam_handleKeyD;
+
+    DescriptorSets descriptorSets = allocateDescriptorSets(vk.device, vk.descriptorSetLayout, vk.descriptorPool);
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
-        graphicsCmdBuffers[i] = createPrimaryCommandBuffer(vk.device, vk.graphicsCmdPools[i]);
+        VkDescriptorBufferInfo uniformBufferInfo = {};
+        uniformBufferInfo.buffer = vk.uniformBuffer.handle;
+        uniformBufferInfo.offset = i*vk.physicalDevice.deviceProperties.limits.minUniformBufferOffsetAlignment;
+        uniformBufferInfo.range = sizeof(mat4);
+
+        VkWriteDescriptorSet descriptorWrite = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+        descriptorWrite.dstSet = descriptorSets.handles[i];
+        descriptorWrite.dstBinding = 0;
+        descriptorWrite.dstArrayElement = 0;
+        descriptorWrite.descriptorCount = 1;
+        descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        descriptorWrite.pBufferInfo = &uniformBufferInfo;
+
+        vkUpdateDescriptorSets(vk.device, 1, &descriptorWrite, 0, NULL);
     }
+
+    PushConstant pushConstant = {};
+    Projection projection = cam_genProjectionMatrix(&camControls, vk.swapchain.extent);
     u32 currentFrame = 0;
     while (!glfwWindowShouldClose(window.handle))
     {
@@ -88,7 +112,8 @@ int main(int, char**){
                 &vk.depthImage,
                 &vk.samplingImage,
                 &vk.framebuffers);
-
+            
+            projection = cam_genProjectionMatrix(&camControls, vk.swapchain.extent);
             continue;
         }
         else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR){
@@ -97,39 +122,36 @@ int main(int, char**){
         }
 
         vkResetFences(vk.device, 1, &vk.frameSyncers[currentFrame].inFlight);
-
         vkResetCommandPool(vk.device, vk.graphicsCmdPools[currentFrame], 0);
 
-        PushConstant pushConstant = updatePushConstant(vk.swapchain.extent, camControls);
+        View view = cam_genViewMatrix(&camControls);
+        glm_mat4_mul_sse2(projection.matrix, view.matrix, pushConstant.viewProjection);
+        updateUniformBuffer(&vk.uniformBuffer, currentFrame*vk.physicalDevice.deviceProperties.limits.minUniformBufferOffsetAlignment, &cube);
 
-        recordDrawCommand(
+        recordModelDrawCommand(
             graphicsCmdBuffers[currentFrame],
             vk.renderPass,
             vk.framebuffers.handles[imageIndex],
             vk.graphicsPipeline,
             vk.swapchain.extent,
             pushConstant,
+            descriptorSets.handles[currentFrame],
             vk.deviceBuffer.handle,
-            0,
-            cube.verticesCount,
-            sizeof(Vertex)*cube.verticesCount,
-            cube.indicesCount
-        );
+            0, cube.verticesCount,
+            sizeof(Vertex)*cube.verticesCount, cube.indicesCount);
 
         submitDrawCommand(
             vk.graphicsQueue,
             graphicsCmdBuffers[currentFrame],
             vk.frameSyncers[currentFrame].imageAvailable,
             vk.frameSyncers[currentFrame].renderFinished,
-            vk.frameSyncers[currentFrame].inFlight
-        );
+            vk.frameSyncers[currentFrame].inFlight);
 
         result = presentSwapchain(
             vk.presentQueue,
             vk.frameSyncers[currentFrame].renderFinished,
             vk.swapchain.handle,
-            imageIndex
-        );
+            imageIndex);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR || 
             result == VK_SUBOPTIMAL_KHR || 
@@ -148,6 +170,7 @@ int main(int, char**){
                 &vk.samplingImage,
                 &vk.framebuffers);
 
+            projection = cam_genProjectionMatrix(&camControls, vk.swapchain.extent);
             window.resizing = false;
         }
         else if (result != VK_SUCCESS){
@@ -164,6 +187,7 @@ int main(int, char**){
     vkDeviceWaitIdle(vk.device);
 
     freeModel(&cube);
+
     destroyWindow(&window);
     destroyVulkanState(&vk);
 

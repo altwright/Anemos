@@ -12,8 +12,14 @@ void keyInputCallback(GLFWwindow* handle, int key, int scancode, int action, int
         case GLFW_KEY_W:
             handler->w(context, action, mods);
             break;
+        case GLFW_KEY_A:
+            handler->a(context, action, mods);
+            break;
         case GLFW_KEY_S:
             handler->s(context, action, mods);
+            break;
+        case GLFW_KEY_D:
+            handler->d(context, action, mods);
             break;
         default:
             break;
@@ -26,7 +32,9 @@ InputHandler createInputHandler()
 {
     InputHandler handler = {};
     handler.w = dropKey;
+    handler.a = dropKey;
     handler.s = dropKey;
+    handler.d = dropKey;
 
     return handler;
 }

@@ -1,6 +1,7 @@
 #include "model.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <cglm/cglm.h>
 #include "cgltf.h"
 
 Model loadModel(const char *filePath)
@@ -64,6 +65,8 @@ Model loadModel(const char *filePath)
     }
 
     cgltf_free(data);
+    
+    glm_mat4_identity(model.worldMatrix);
 
     return model;
 }

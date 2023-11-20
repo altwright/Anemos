@@ -2,7 +2,8 @@
 #define CGLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <cglm/cglm.h>
 #include <vulkan/vulkan.h>
-#include "controls.h"
+#include "config.h"
+#include "model.h"
 
 /*
 Vulkan expects the data in your structure to be aligned in memory in a specific way, for example:
@@ -19,9 +20,25 @@ typedef struct UniformBufferData{
     mat4 projection;
 } UniformBufferData;
 
-typedef struct {
-    mat4 mvp;
+typedef struct PushConstant{
+    mat4 viewProjection;
 } PushConstant;
 
+typedef struct View{
+    mat4 matrix;
+} View;
+
+typedef struct Projection{
+    mat4 matrix;
+} Projection;
+
+typedef struct DescriptorSets{
+    VkDescriptorSetLayout layout;
+    VkDescriptorSet handles[MAX_FRAMES_IN_FLIGHT];
+} DescriptorSets;
+
 VkShaderModule createShaderModule(VkDevice device, uint32_t *code, size_t numBytes);
-PushConstant updatePushConstant(VkExtent2D renderArea, CameraControls camControls);
+VkDescriptorSetLayout createDescriptorSetLayout(VkDevice device);
+VkDescriptorPool createDescriptorPool(VkDevice device);
+DescriptorSets allocateDescriptorSets(VkDevice device, VkDescriptorSetLayout layout, VkDescriptorPool pool);
+void updateUniformBuffer(Buffer *uniformBuffer, VkDeviceSize offset, Model *model);

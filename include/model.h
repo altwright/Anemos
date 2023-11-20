@@ -7,6 +7,7 @@ typedef struct Model{
     Vertex *vertices;
     u32 indicesCount;
     u16 *indices;
+    mat4 worldMatrix;
 } Model;
 
 Model loadModel(const char *filePath);

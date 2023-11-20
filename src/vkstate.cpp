@@ -48,13 +48,17 @@ VulkanState initVulkanState(Window *window, const UserConfig *config)
         &vk.swapchain,
         vk.depthImage.view,
         vk.samplingImage.view);
+    vk.descriptorSetLayout = createDescriptorSetLayout(vk.device);
+    vk.descriptorPool = createDescriptorPool(vk.device);
     vk.graphicsPipeline = createGraphicsPipeline(
         vk.device,
         vk.renderPass,
+        vk.descriptorSetLayout,
         vk.physicalDevice.maxSamplingCount);
 
-    vk.deviceBuffer = createDeviceBuffer(vk.allocator, 1 << 28);
-    vk.stagingBuffer = createStagingBuffer(vk.allocator, 1 << 28);
+    vk.deviceBuffer = createDeviceBuffer(vk.allocator, 1 << 26);
+    vk.stagingBuffer = createStagingBuffer(vk.allocator, 1 << 26);
+    vk.uniformBuffer = createUniformBuffer(vk.allocator, 1 << 26);
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
         vk.frameSyncers[i] = createFrameSynchroniser(vk.device);
@@ -74,6 +78,7 @@ VulkanState initVulkanState(Window *window, const UserConfig *config)
 
 void destroyVulkanState(VulkanState *vk)
 {
+    vmaDestroyBuffer(vk->allocator, vk->uniformBuffer.handle, vk->uniformBuffer.alloc);
     vmaDestroyBuffer(vk->allocator, vk->stagingBuffer.handle, vk->stagingBuffer.alloc);
     vmaDestroyBuffer(vk->allocator, vk->deviceBuffer.handle, vk->deviceBuffer.alloc);
 
@@ -87,6 +92,9 @@ void destroyVulkanState(VulkanState *vk)
 
     vkDestroyPipeline(vk->device, vk->graphicsPipeline.handle, NULL);
     vkDestroyPipelineLayout(vk->device, vk->graphicsPipeline.layout, NULL);
+
+    vkDestroyDescriptorPool(vk->device, vk->descriptorPool, NULL);
+    vkDestroyDescriptorSetLayout(vk->device, vk->descriptorSetLayout, NULL);
 
     destroyFramebuffers(vk->device, &vk->framebuffers);
 

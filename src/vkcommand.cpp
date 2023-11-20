@@ -21,13 +21,14 @@ VkCommandPool createCommandPool(VkDevice device, uint32_t queueIndex, VkCommandP
     return pool;
 }
 
-void recordDrawCommand(
+void recordModelDrawCommand(
     VkCommandBuffer commandBuffer, 
     VkRenderPass renderPass, 
     VkFramebuffer framebuffer, 
     PipelineDetails graphicsPipeline,
     VkExtent2D renderArea,
     PushConstant pushConstant,
+    VkDescriptorSet descriptorSet,
     VkBuffer deviceBuffer,
     VkDeviceSize vertexBufferOffset,
     u32 vertexCount,
@@ -82,18 +83,15 @@ void recordDrawCommand(
     scissor.offset = {0, 0};
     scissor.extent = renderArea;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-    /*
+    
     vkCmdBindDescriptorSets(
         commandBuffer, 
         VK_PIPELINE_BIND_POINT_GRAPHICS, 
         graphicsPipeline.layout, 
-        0, 
-        1, 
-        &descriptorSet, 
-        0, 
-        NULL
+        0, 1, &descriptorSet, 
+        0, NULL
     );
-    */
+    
     vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
 
     vkCmdEndRenderPass(commandBuffer);

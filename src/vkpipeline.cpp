@@ -110,6 +110,7 @@ VkRenderPass createRenderPass(
 PipelineDetails createGraphicsPipeline(
     VkDevice device, 
     VkRenderPass renderPass, 
+    VkDescriptorSetLayout setLayout,
     VkSampleCountFlagBits samplingCount)
 {    
     VkPushConstantRange pushConstant = {};
@@ -119,8 +120,8 @@ PipelineDetails createGraphicsPipeline(
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};//For specifying uniform variables
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 0;
-    pipelineLayoutInfo.pSetLayouts = NULL;
+    pipelineLayoutInfo.setLayoutCount = 1;
+    pipelineLayoutInfo.pSetLayouts = &setLayout;
     pipelineLayoutInfo.pushConstantRangeCount = 1;
     pipelineLayoutInfo.pPushConstantRanges = &pushConstant;
 
