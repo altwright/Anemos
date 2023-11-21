@@ -12,4 +12,4 @@ typedef struct InputHandler {
 } InputHandler;
 
 void keyInputCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
-InputHandler createInputHandler();
+void resetInputHandler(InputHandler *handler);

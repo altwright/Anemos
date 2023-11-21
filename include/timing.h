@@ -3,6 +3,7 @@
 #define _GNU_SOURCE
 #endif
 #include <time.h>
+#include "int.h"
 
 #define TIMING_CLOCK CLOCK_MONOTONIC_RAW
 
@@ -21,3 +22,6 @@
 #define NS_TO_US(ns)    ((ns)/1000)
 
 extern timespec START_TIME;
+
+void checkGetTime(int err);
+s64 getCurrentTimeNs();

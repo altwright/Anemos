@@ -12,14 +12,17 @@
 #include "input.h"
 #include "controls.h"
 
-int main(int, char**){
+int main(int, char**)
+{
     UserConfig userConfig = {};
     if (!loadUserConfig(CONFIG_FILE, &userConfig)){
         fprintf(stderr, "Failed to load complete user config\n");
         exit(EXIT_FAILURE);
     }
 
-    InputHandler inputHandler = createInputHandler();
+    InputHandler inputHandler = {};
+    resetInputHandler(&inputHandler);
+
     Window window = {};
     if (!initWindow(
         TITLE, 
@@ -55,15 +58,8 @@ int main(int, char**){
         vk.transferCommandPool, 
         vk.transferQueue);
 
-    CameraControls camControls = {
-        .position = {3.0f, 3.0f, 3.0f},
-        .focusPoint = {0.0f, 0.0f, 0.0f},
-        .up = {0.0f, 0.0f, 1.0f}};
-    inputHandler.ctx = &camControls;
-    inputHandler.w = &cam_handleKeyW;
-    inputHandler.a = &cam_handleKeyA;
-    inputHandler.s = &cam_handleKeyS;
-    inputHandler.d = &cam_handleKeyD;
+    CameraControls cam = cam_createControls();
+    cam_setInputHandler(&cam, &inputHandler);
 
     DescriptorSets descriptorSets = allocateDescriptorSets(vk.device, vk.descriptorSetLayout, vk.descriptorPool);
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
@@ -84,10 +80,12 @@ int main(int, char**){
     }
 
     PushConstant pushConstant = {};
-    Projection projection = cam_genProjectionMatrix(&camControls, vk.swapchain.extent);
+    Projection projection = cam_genProjectionMatrix(&cam, vk.swapchain.extent);
     u32 currentFrame = 0;
     while (!glfwWindowShouldClose(window.handle))
     {
+        cam_processInput(&cam);
+
         vkWaitForFences(vk.device, 1, &vk.frameSyncers[currentFrame].inFlight, VK_TRUE, UINT64_MAX);
 
         uint32_t imageIndex;//Will refer to a VkImage in our swapchain images array
@@ -113,7 +111,7 @@ int main(int, char**){
                 &vk.samplingImage,
                 &vk.framebuffers);
             
-            projection = cam_genProjectionMatrix(&camControls, vk.swapchain.extent);
+            projection = cam_genProjectionMatrix(&cam, vk.swapchain.extent);
             continue;
         }
         else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR){
@@ -124,7 +122,7 @@ int main(int, char**){
         vkResetFences(vk.device, 1, &vk.frameSyncers[currentFrame].inFlight);
         vkResetCommandPool(vk.device, vk.graphicsCmdPools[currentFrame], 0);
 
-        View view = cam_genViewMatrix(&camControls);
+        View view = cam_genViewMatrix(&cam);
         glm_mat4_mul_sse2(projection.matrix, view.matrix, pushConstant.viewProjection);
         updateUniformBuffer(&vk.uniformBuffer, currentFrame*vk.physicalDevice.deviceProperties.limits.minUniformBufferOffsetAlignment, &cube);
 
@@ -170,7 +168,7 @@ int main(int, char**){
                 &vk.samplingImage,
                 &vk.framebuffers);
 
-            projection = cam_genProjectionMatrix(&camControls, vk.swapchain.extent);
+            projection = cam_genProjectionMatrix(&cam, vk.swapchain.extent);
             window.resizing = false;
         }
         else if (result != VK_SUCCESS){

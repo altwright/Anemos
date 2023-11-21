@@ -28,13 +28,11 @@ void keyInputCallback(GLFWwindow* handle, int key, int scancode, int action, int
 
 static void dropKey(void *ctx, int action, int mods){};
 
-InputHandler createInputHandler()
+void resetInputHandler(InputHandler *handler)
 {
-    InputHandler handler = {};
-    handler.w = dropKey;
-    handler.a = dropKey;
-    handler.s = dropKey;
-    handler.d = dropKey;
-
-    return handler;
+    handler->ctx = NULL;
+    handler->w = dropKey;
+    handler->a = dropKey;
+    handler->s = dropKey;
+    handler->d = dropKey;
 }
