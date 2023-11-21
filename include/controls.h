@@ -8,10 +8,14 @@ typedef struct CameraControls{
     vec3 up;
     float radPerSec;
 
-    bool dPressed;
-    s64 dPressedStartTimeNs;
+    bool wPressed;
+    s64 wPressedStartTimeNs;
     bool aPressed;
     s64 aPressedStartTimeNs;
+    bool sPressed;
+    s64 sPressedStartTimeNs;
+    bool dPressed;
+    s64 dPressedStartTimeNs;
 } CameraControls;
 
 CameraControls cam_createControls();

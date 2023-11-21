@@ -55,8 +55,33 @@ static s64 orbitCamLaterally(CameraControls *cam, s64 startTimeNs, float radPerS
     return currentTimeNs;
 }
 
+static s64 orbitCamLongitudinally(CameraControls *cam, s64 startTimeNs, float radPerSec)
+{
+    timespec currentTime = {};
+    checkGetTime(clock_gettime(TIMING_CLOCK, &currentTime));
+    s64 currentTimeNs = SEC_TO_NS(currentTime.tv_sec) + currentTime.tv_nsec;
+    s64 timeDiffNs = currentTimeNs - startTimeNs;
+    vec3 rotationAxis = {};
+    vec3 vecFromFocusPoint = {};
+    glm_vec3_sub(cam->position, cam->focusPoint, vecFromFocusPoint);
+    glm_vec3_cross(vecFromFocusPoint, cam->up, rotationAxis);
+    glm_vec3_rotate(cam->position, radPerSec*timeDiffNs/SEC_TO_NS(1), rotationAxis);
+
+    return currentTimeNs;
+}
 void cam_processInput(CameraControls *cam)
 {
+    if (cam->wPressed){
+        if (!cam->wPressedStartTimeNs){
+            cam->wPressedStartTimeNs = getCurrentTimeNs();
+        }
+        else{
+            cam->wPressedStartTimeNs = orbitCamLongitudinally(cam, cam->wPressedStartTimeNs, cam->radPerSec);
+        }
+    }
+    else
+        cam->wPressedStartTimeNs = 0;
+
     if (cam->aPressed){
         if (!cam->aPressedStartTimeNs){
             cam->aPressedStartTimeNs = getCurrentTimeNs();
@@ -67,6 +92,17 @@ void cam_processInput(CameraControls *cam)
     }
     else 
         cam->aPressedStartTimeNs = 0;
+
+    if (cam->sPressed){
+        if (!cam->sPressedStartTimeNs){
+            cam->sPressedStartTimeNs = getCurrentTimeNs();
+        }
+        else{
+            cam->sPressedStartTimeNs = orbitCamLongitudinally(cam, cam->sPressedStartTimeNs, -1*cam->radPerSec);
+        }
+    }
+    else
+        cam->sPressedStartTimeNs = 0;
 
     if (cam->dPressed){
         if (!cam->dPressedStartTimeNs){
@@ -82,21 +118,25 @@ void cam_processInput(CameraControls *cam)
 
 void cam_handleKeyW(void *ctx, int action, int mods)
 {
-    if (action == GLFW_PRESS){
-        CameraControls *cam = (CameraControls*)ctx;
-        cam->position[0] -= 0.1f;
-        cam->position[1] -= 0.1f;
-        cam->position[2] -= 0.1f;
+    CameraControls *cam = (CameraControls*)ctx;
+
+    if (action != GLFW_RELEASE){
+        cam->wPressed = true;
+    }
+    else{
+        cam->wPressed = false;
     }
 }
 
 void cam_handleKeyS(void *ctx, int action, int mods)
 {
-    if (action == GLFW_PRESS){
-        CameraControls *cam = (CameraControls*)ctx;
-        cam->position[0] += 0.1f;
-        cam->position[1] += 0.1f;
-        cam->position[2] += 0.1f;
+    CameraControls *cam = (CameraControls*)ctx;
+
+    if (action != GLFW_RELEASE){
+        cam->sPressed = true;
+    }
+    else{
+        cam->sPressed = false;
     }
 }
 
