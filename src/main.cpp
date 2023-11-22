@@ -80,7 +80,7 @@ int main(int, char**)
     }
 
     PushConstant pushConstant = {};
-    Projection projection = cam_genProjectionMatrix(&cam, vk.swapchain.extent);
+    Matrix4 projection = cam_genProjectionMatrix(&cam, vk.swapchain.extent);
     u32 currentFrame = 0;
     while (!glfwWindowShouldClose(window.handle))
     {
@@ -122,7 +122,7 @@ int main(int, char**)
         vkResetFences(vk.device, 1, &vk.frameSyncers[currentFrame].inFlight);
         vkResetCommandPool(vk.device, vk.graphicsCmdPools[currentFrame], 0);
 
-        View view = cam_genViewMatrix(&cam);
+        Matrix4 view = cam_genViewMatrix(&cam);
         glm_mat4_mul_sse2(projection.matrix, view.matrix, pushConstant.viewProjection);
         updateUniformBuffer(&vk.uniformBuffer, currentFrame*vk.physicalDevice.deviceProperties.limits.minUniformBufferOffsetAlignment, &cube);
 

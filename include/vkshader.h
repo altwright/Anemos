@@ -24,13 +24,9 @@ typedef struct PushConstant{
     mat4 viewProjection;
 } PushConstant;
 
-typedef struct View{
+typedef struct Matrix4{
     mat4 matrix;
-} View;
-
-typedef struct Projection{
-    mat4 matrix;
-} Projection;
+} Matrix4;
 
 typedef struct DescriptorSets{
     VkDescriptorSetLayout layout;

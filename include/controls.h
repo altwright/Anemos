@@ -3,9 +3,9 @@
 #include "vkshader.h"
 
 typedef struct CameraControls{
-    vec3 position;
-    vec3 focusPoint;
-    vec3 up;
+    vec3 worldPosition;
+    versor worldOrientation;
+
     float radPerSec;
 
     bool wPressed;
@@ -19,8 +19,8 @@ typedef struct CameraControls{
 } CameraControls;
 
 CameraControls cam_createControls();
-Projection cam_genProjectionMatrix(CameraControls *cam, VkExtent2D renderArea);
-View cam_genViewMatrix(CameraControls *cam);
+Matrix4 cam_genProjectionMatrix(CameraControls *cam, VkExtent2D renderArea);
+Matrix4 cam_genViewMatrix(CameraControls *cam);
 void cam_processInput(CameraControls *cam);
 void cam_setInputHandler(CameraControls *cam, InputHandler *handler);
 void cam_handleKeyW(void *ctx, int action, int mods);

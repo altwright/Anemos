@@ -6,16 +6,17 @@
 
 CameraControls cam_createControls()
 {
-    CameraControls camControls = {
-        .position = {3.0f, 3.0f, 3.0f},
-        .focusPoint = {0.0f, 0.0f, 0.0f},
-        .up = {0.0f, 0.0f, 1.0f}};
+    CameraControls cam = {
+        .worldPosition = {3.0f, 3.0f, 3.0f}};
 
-    camControls.radPerSec = glm_rad(90.0f);
+    vec3 focus = {0.0f, 0.0f, 0.0f};
+    vec3 up = {0.0f, 0.0f, 1.0f};
+    glm_quat_forp(cam.worldPosition, focus, up, cam.worldOrientation);
+    glm_quat_inv(cam.worldOrientation, cam.worldOrientation);
 
-    camControls.dPressed = false;
+    cam.radPerSec = glm_rad(90.0f);
 
-    return camControls;
+    return cam;
 }
 
 void cam_setInputHandler(CameraControls *cam, InputHandler *handler)
@@ -27,16 +28,24 @@ void cam_setInputHandler(CameraControls *cam, InputHandler *handler)
     handler->d = &cam_handleKeyD;
 }
 
-View cam_genViewMatrix(CameraControls *cam)
+Matrix4 cam_genViewMatrix(CameraControls *cam)
 {
-    View view = {};
-    glm_lookat(cam->position, cam->focusPoint, cam->up, view.matrix);
+    Matrix4 view = {GLM_MAT4_IDENTITY_INIT};
+
+    vec3 negatedPosition = {};
+    glm_vec3_negate_to(cam->worldPosition, negatedPosition);
+    mat4 translation = GLM_MAT4_IDENTITY_INIT;
+    glm_translate_make(translation, negatedPosition);
+    mat4 rotation = GLM_MAT4_IDENTITY_INIT;
+    glm_quat_mat4(cam->worldOrientation, rotation);
+    glm_mat4_mul_sse2(rotation, translation, view.matrix);
+
     return view;
 }
 
-Projection cam_genProjectionMatrix(CameraControls *cam, VkExtent2D renderArea)
+Matrix4 cam_genProjectionMatrix(CameraControls *cam, VkExtent2D renderArea)
 {
-    Projection proj = {};
+    Matrix4 proj = {};
     glm_perspective(glm_rad(45.0f), renderArea.width / (float)renderArea.height, 0.1f, 10.0f, proj.matrix);
     proj.matrix[1][1] *= -1;//Originally designed for OpenGL, so must be inverted
     return proj;
@@ -48,9 +57,6 @@ static s64 orbitCamLaterally(CameraControls *cam, s64 startTimeNs, float radPerS
     checkGetTime(clock_gettime(TIMING_CLOCK, &currentTime));
     s64 currentTimeNs = SEC_TO_NS(currentTime.tv_sec) + currentTime.tv_nsec;
     s64 timeDiffNs = currentTimeNs - startTimeNs;
-    vec3 rotationAxis = {};
-    glm_vec3_add(cam->focusPoint, cam->up, rotationAxis);
-    glm_vec3_rotate(cam->position, radPerSec*timeDiffNs/SEC_TO_NS(1), rotationAxis);
 
     return currentTimeNs;
 }
@@ -61,56 +67,44 @@ static s64 orbitCamLongitudinally(CameraControls *cam, s64 startTimeNs, float ra
     checkGetTime(clock_gettime(TIMING_CLOCK, &currentTime));
     s64 currentTimeNs = SEC_TO_NS(currentTime.tv_sec) + currentTime.tv_nsec;
     s64 timeDiffNs = currentTimeNs - startTimeNs;
-    vec3 rotationAxis = {};
-    vec3 vecFromFocusPoint = {};
-    glm_vec3_sub(cam->position, cam->focusPoint, vecFromFocusPoint);
-    glm_vec3_cross(vecFromFocusPoint, cam->up, rotationAxis);
-    glm_vec3_rotate(cam->position, radPerSec*timeDiffNs/SEC_TO_NS(1), rotationAxis);
 
     return currentTimeNs;
 }
+
 void cam_processInput(CameraControls *cam)
 {
     if (cam->wPressed){
-        if (!cam->wPressedStartTimeNs){
+        if (!cam->wPressedStartTimeNs)
             cam->wPressedStartTimeNs = getCurrentTimeNs();
-        }
-        else{
-            cam->wPressedStartTimeNs = orbitCamLongitudinally(cam, cam->wPressedStartTimeNs, cam->radPerSec);
-        }
+        else
+            cam->wPressedStartTimeNs = orbitCamLongitudinally(cam, cam->wPressedStartTimeNs, -1*cam->radPerSec);
     }
     else
         cam->wPressedStartTimeNs = 0;
 
     if (cam->aPressed){
-        if (!cam->aPressedStartTimeNs){
+        if (!cam->aPressedStartTimeNs)
             cam->aPressedStartTimeNs = getCurrentTimeNs();
-        }
-        else{
+        else
             cam->aPressedStartTimeNs = orbitCamLaterally(cam, cam->aPressedStartTimeNs, -1*cam->radPerSec);
-        }
     }
     else 
         cam->aPressedStartTimeNs = 0;
 
     if (cam->sPressed){
-        if (!cam->sPressedStartTimeNs){
+        if (!cam->sPressedStartTimeNs)
             cam->sPressedStartTimeNs = getCurrentTimeNs();
-        }
-        else{
-            cam->sPressedStartTimeNs = orbitCamLongitudinally(cam, cam->sPressedStartTimeNs, -1*cam->radPerSec);
-        }
+        else
+            cam->sPressedStartTimeNs = orbitCamLongitudinally(cam, cam->sPressedStartTimeNs, cam->radPerSec);
     }
     else
         cam->sPressedStartTimeNs = 0;
 
     if (cam->dPressed){
-        if (!cam->dPressedStartTimeNs){
+        if (!cam->dPressedStartTimeNs)
             cam->dPressedStartTimeNs = getCurrentTimeNs();
-        }
-        else{
+        else
             cam->dPressedStartTimeNs = orbitCamLaterally(cam, cam->dPressedStartTimeNs, cam->radPerSec);
-        }
     }
     else 
         cam->dPressedStartTimeNs = 0;
