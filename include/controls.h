@@ -3,19 +3,21 @@
 #include "vkshader.h"
 
 typedef struct CameraControls{
-    vec3 worldPosition;
-    versor worldOrientation;
+    vec3 position;
+    versor orientation;
+    vec3 up;
+    vec3 right;
 
-    float radPerSec;
+    float rad_s;
 
     bool wPressed;
-    s64 wPressedStartTimeNs;
+    s64 wPressedStart_ns;
     bool aPressed;
-    s64 aPressedStartTimeNs;
+    s64 aPressedStart_ns;
     bool sPressed;
-    s64 sPressedStartTimeNs;
+    s64 sPressedStart_ns;
     bool dPressed;
-    s64 dPressedStartTimeNs;
+    s64 dPressedStart_ns;
 } CameraControls;
 
 CameraControls cam_createControls();
