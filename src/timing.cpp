@@ -21,7 +21,7 @@ void checkGetTime(int err)
     }
 }
 
-s64 getCurrentTimeNs()
+s64 getCurrentTime_ns()
 {
     timespec currentTime = {};
     checkGetTime(clock_gettime(TIMING_CLOCK, &currentTime));

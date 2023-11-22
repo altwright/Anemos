@@ -24,4 +24,4 @@
 extern timespec START_TIME;
 
 void checkGetTime(int err);
-s64 getCurrentTimeNs();
+s64 getCurrentTime_ns();

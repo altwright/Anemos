@@ -13,7 +13,6 @@ CameraControls cam_createControls()
     vec3 focus = GLM_VEC3_ZERO_INIT;
     vec3 up = {0.0f, 0.0f, 1.0f};
     glm_quat_forp(cam.position, focus, up, cam.orientation);
-    glm_quat_rotatev(cam.orientation, cam.right, cam.right);
     glm_quat_inv(cam.orientation, cam.orientation);
 
     cam.rad_s = glm_rad(90.0f);
@@ -78,11 +77,14 @@ static s64 orbitCamLongitudinally(CameraControls *cam, s64 start_ns, float rad_s
 
     float angle = timeDiff_ns * rad_s / SEC_TO_NS(1);
 
-    vec3 right = {1.0f, 0.0f, 0.0f};
-    glm_vec3_rotate(cam->position, angle, cam->right);
-    versor invRotation = {};
-    glm_quatv(invRotation, -1*angle, right);
-    glm_quat_mul_sse2(invRotation, cam->orientation, cam->orientation);
+    versor invOrientation = {};
+    glm_quat_inv(cam->orientation, invOrientation);
+    vec3 relRight = {};
+    glm_quat_rotatev(invOrientation, cam->right, relRight);
+    glm_vec3_rotate(cam->position, angle, relRight);
+
+    glm_quatv(invOrientation, -1*angle, cam->right);
+    glm_quat_mul_sse2(invOrientation, cam->orientation, cam->orientation);
 
     return current_ns;
 }
@@ -91,16 +93,16 @@ void cam_processInput(CameraControls *cam)
 {
     if (cam->wPressed){
         if (!cam->wPressedStart_ns)
-            cam->wPressedStart_ns = getCurrentTimeNs();
+            cam->wPressedStart_ns = getCurrentTime_ns();
         else
-            cam->wPressedStart_ns = orbitCamLongitudinally(cam, cam->wPressedStart_ns, cam->rad_s);
+            cam->wPressedStart_ns = orbitCamLongitudinally(cam, cam->wPressedStart_ns, -1*cam->rad_s);
     }
     else
         cam->wPressedStart_ns = 0;
 
     if (cam->aPressed){
         if (!cam->aPressedStart_ns)
-            cam->aPressedStart_ns = getCurrentTimeNs();
+            cam->aPressedStart_ns = getCurrentTime_ns();
         else
             cam->aPressedStart_ns = orbitCamLaterally(cam, cam->aPressedStart_ns, -1*cam->rad_s);
     }
@@ -109,16 +111,16 @@ void cam_processInput(CameraControls *cam)
 
     if (cam->sPressed){
         if (!cam->sPressedStart_ns)
-            cam->sPressedStart_ns = getCurrentTimeNs();
+            cam->sPressedStart_ns = getCurrentTime_ns();
         else
-            cam->sPressedStart_ns = orbitCamLongitudinally(cam, cam->sPressedStart_ns, -1*cam->rad_s);
+            cam->sPressedStart_ns = orbitCamLongitudinally(cam, cam->sPressedStart_ns, cam->rad_s);
     }
     else
         cam->sPressedStart_ns = 0;
 
     if (cam->dPressed){
         if (!cam->dPressedStart_ns)
-            cam->dPressedStart_ns = getCurrentTimeNs();
+            cam->dPressedStart_ns = getCurrentTime_ns();
         else
             cam->dPressedStart_ns = orbitCamLaterally(cam, cam->dPressedStart_ns, cam->rad_s);
     }
