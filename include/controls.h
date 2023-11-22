@@ -4,9 +4,10 @@
 
 typedef struct CameraControls{
     vec3 position;
-    versor orientation;
-    vec3 up;
+    versor world;
     vec3 right;
+    vec3 up;
+    vec3 forward;
 
     float rad_s;
 

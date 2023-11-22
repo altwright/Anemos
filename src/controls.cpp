@@ -8,12 +8,14 @@ CameraControls cam_createControls()
 {
     CameraControls cam = {
         .position = {3.0f, 3.0f, 3.0f},
-        .right = {1.0f, 0.0f, 0.0f}};
+        .right = {1.0f, 0.0f, 0.0f},
+        .up = {0.0f, 1.0f, 0.0f},
+        .forward = {0.0f, 0.0f, 1.0f}};
 
     vec3 focus = GLM_VEC3_ZERO_INIT;
     vec3 up = {0.0f, 0.0f, 1.0f};
-    glm_quat_forp(cam.position, focus, up, cam.orientation);
-    glm_quat_inv(cam.orientation, cam.orientation);
+    glm_quat_forp(cam.position, focus, up, cam.world);
+    glm_quat_inv(cam.world, cam.world);
 
     cam.rad_s = glm_rad(90.0f);
 
@@ -35,17 +37,11 @@ Matrix4 cam_genViewMatrix(CameraControls *cam)
 
     vec3 negPosition = {};
     glm_vec3_negate_to(cam->position, negPosition);
-    //printf("{%.2f, %.2f, %.2f}\n", relFocusPoint[0], relFocusPoint[1], relFocusPoint[2]);
-    //vec3 rotRelFocusPoint = {};
-    //glm_quat_rotatev(cam->worldOrientation, relFocusPoint, rotRelFocusPoint);
-    //printf("{%.2f, %.2f, %.2f}\n", rotRelFocusPoint[0], rotRelFocusPoint[1], rotRelFocusPoint[2]);
-
     mat4 translation = GLM_MAT4_IDENTITY_INIT;
     glm_translate_make(translation, negPosition);
     mat4 rotation = GLM_MAT4_IDENTITY_INIT;
-    glm_quat_mat4(cam->orientation, rotation);
+    glm_quat_mat4(cam->world, rotation);
     glm_mat4_mul_sse2(rotation, translation, view.matrix);
-
 
     return view;
 }
@@ -58,14 +54,26 @@ Matrix4 cam_genProjectionMatrix(CameraControls *cam, VkExtent2D renderArea)
     return proj;
 }
 
-static s64 orbitCamLaterally(CameraControls *cam, s64 startTimeNs, float radPerSec)
+static s64 orbitCamLaterally(CameraControls *cam, s64 startTimeNs, float rad_s)
 {
     timespec currentTime = {};
     checkGetTime(clock_gettime(TIMING_CLOCK, &currentTime));
-    s64 currentTimeNs = SEC_TO_NS(currentTime.tv_sec) + currentTime.tv_nsec;
-    s64 timeDiffNs = currentTimeNs - startTimeNs;
+    s64 current_ns = SEC_TO_NS(currentTime.tv_sec) + currentTime.tv_nsec;
+    s64 timeDiff_ns = current_ns - startTimeNs;
 
-    return currentTimeNs;
+    float angle = timeDiff_ns * rad_s / SEC_TO_NS(1);
+
+    versor invOrientation = {};
+    glm_quat_inv(cam->world, invOrientation);
+    vec3 relUp = {};
+    glm_quat_rotatev(invOrientation, cam->up, relUp);
+    //printf("{%.2f, %.2f, %.2f}\n", relRight[0], relRight[1], relRight[2]);
+    glm_vec3_rotate(cam->position, angle, relUp);
+
+    glm_quatv(invOrientation, -1*angle, cam->up);
+    glm_quat_mul_sse2(invOrientation, cam->world, cam->world);
+
+    return current_ns;
 }
 
 static s64 orbitCamLongitudinally(CameraControls *cam, s64 start_ns, float rad_s)
@@ -78,13 +86,14 @@ static s64 orbitCamLongitudinally(CameraControls *cam, s64 start_ns, float rad_s
     float angle = timeDiff_ns * rad_s / SEC_TO_NS(1);
 
     versor invOrientation = {};
-    glm_quat_inv(cam->orientation, invOrientation);
+    glm_quat_inv(cam->world, invOrientation);
     vec3 relRight = {};
     glm_quat_rotatev(invOrientation, cam->right, relRight);
+    //printf("{%.2f, %.2f, %.2f}\n", relRight[0], relRight[1], relRight[2]);
     glm_vec3_rotate(cam->position, angle, relRight);
 
     glm_quatv(invOrientation, -1*angle, cam->right);
-    glm_quat_mul_sse2(invOrientation, cam->orientation, cam->orientation);
+    glm_quat_mul_sse2(invOrientation, cam->world, cam->world);
 
     return current_ns;
 }
