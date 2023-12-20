@@ -14,8 +14,8 @@ CameraControls cam_createControls()
 
     vec3 focus = GLM_VEC3_ZERO_INIT;
     vec3 up = {0.0f, 0.0f, 1.0f};
-    glm_quat_forp(cam.position, focus, up, cam.world);
-    glm_quat_inv(cam.world, cam.world);
+    glm_quat_forp(cam.position, focus, up, cam.globalOri);
+    glm_quat_inv(cam.globalOri, cam.globalOri);
 
     cam.rad_s = glm_rad(90.0f);
 
@@ -29,6 +29,7 @@ void cam_setInputHandler(CameraControls *cam, InputHandler *handler)
     handler->a = &cam_handleKeyA;
     handler->s = &cam_handleKeyS;
     handler->d = &cam_handleKeyD;
+    handler->scroll = &cam_handleMouseScroll;
 }
 
 Matrix4 cam_genViewMatrix(CameraControls *cam)
@@ -40,7 +41,7 @@ Matrix4 cam_genViewMatrix(CameraControls *cam)
     mat4 translation = GLM_MAT4_IDENTITY_INIT;
     glm_translate_make(translation, negPosition);
     mat4 rotation = GLM_MAT4_IDENTITY_INIT;
-    glm_quat_mat4(cam->world, rotation);
+    glm_quat_mat4(cam->globalOri, rotation);
     glm_mat4_mul_sse2(rotation, translation, view.matrix);
 
     return view;
@@ -63,15 +64,16 @@ static s64 orbitCamLaterally(CameraControls *cam, s64 startTimeNs, float rad_s)
 
     float angle = timeDiff_ns * rad_s / SEC_TO_NS(1);
 
-    versor invOrientation = {};
-    glm_quat_inv(cam->world, invOrientation);
+    versor invGlobalOri = {};
+    glm_quat_inv(cam->globalOri, invGlobalOri);
     vec3 relUp = {};
-    glm_quat_rotatev(invOrientation, cam->up, relUp);
-    //printf("{%.2f, %.2f, %.2f}\n", relRight[0], relRight[1], relRight[2]);
+    glm_quat_rotatev(invGlobalOri, cam->up, relUp);
     glm_vec3_rotate(cam->position, angle, relUp);
+    //printf("{%.2f, %.2f, %.2f}\n", relUp[0], relUp[1], relUp[2]);
 
-    glm_quatv(invOrientation, -1*angle, cam->up);
-    glm_quat_mul_sse2(invOrientation, cam->world, cam->world);
+    //Replaces contents of first param
+    glm_quatv(invGlobalOri, -1*angle, cam->up);
+    glm_quat_mul_sse2(invGlobalOri, cam->globalOri, cam->globalOri);
 
     return current_ns;
 }
@@ -85,15 +87,16 @@ static s64 orbitCamLongitudinally(CameraControls *cam, s64 start_ns, float rad_s
 
     float angle = timeDiff_ns * rad_s / SEC_TO_NS(1);
 
-    versor invOrientation = {};
-    glm_quat_inv(cam->world, invOrientation);
+    versor invGlobalOri = {};
+    glm_quat_inv(cam->globalOri, invGlobalOri);
     vec3 relRight = {};
-    glm_quat_rotatev(invOrientation, cam->right, relRight);
-    //printf("{%.2f, %.2f, %.2f}\n", relRight[0], relRight[1], relRight[2]);
+    glm_quat_rotatev(invGlobalOri, cam->right, relRight);
     glm_vec3_rotate(cam->position, angle, relRight);
+    //printf("{%.2f, %.2f, %.2f}\n", relRight[0], relRight[1], relRight[2]);
 
-    glm_quatv(invOrientation, -1*angle, cam->right);
-    glm_quat_mul_sse2(invOrientation, cam->world, cam->world);
+    //Replaces contents of first param
+    glm_quatv(invGlobalOri, -1*angle, cam->right);
+    glm_quat_mul_sse2(invGlobalOri, cam->globalOri, cam->globalOri);
 
     return current_ns;
 }
@@ -184,3 +187,8 @@ void cam_handleKeyA(void *ctx, int action, int mods)
         cam->aPressed = false;
     }
 }  
+
+void cam_handleMouseScroll(void *ctx, double offset)
+{
+    printf("%f\n", offset);
+}

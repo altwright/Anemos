@@ -88,7 +88,7 @@ int main(int, char**)
 
         vkWaitForFences(vk.device, 1, &vk.frameSyncers[currentFrame].inFlight, VK_TRUE, UINT64_MAX);
 
-        uint32_t imageIndex;//Will refer to a VkImage in our swapchain images array
+        uint32_t imageIndex = 0;//Will refer to a VkImage in our swapchain images array
         VkResult result = vkAcquireNextImageKHR(
             vk.device, 
             vk.swapchain.handle, 
@@ -177,8 +177,7 @@ int main(int, char**)
         }
             
         currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-        // Check whether the user clicked on the close button (and any other
-        // mouse/key event, which we don't use so far)
+
         glfwPollEvents();
     }
 
