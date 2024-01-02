@@ -190,5 +190,17 @@ void cam_handleKeyA(void *ctx, int action, int mods)
 
 void cam_handleMouseScroll(void *ctx, double offset)
 {
-    printf("%f\n", offset);
+    CameraControls *cam = (CameraControls*)ctx;
+    vec3 zoomOffset = {};
+    glm_vec3_scale_as(cam->position, 0.5f, zoomOffset);
+
+    if (offset > 0)//Scroll up and zoom in
+    {
+        glm_vec3_negate(zoomOffset);
+        glm_vec3_add(zoomOffset, cam->position, cam->position);
+    }
+    else//Scroll down and zoom out
+    {
+        glm_vec3_add(zoomOffset, cam->position, cam->position);
+    }
 }
