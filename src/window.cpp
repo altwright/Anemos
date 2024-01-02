@@ -16,7 +16,6 @@ bool initWindow(
     const char *title, 
     size_t width, 
     size_t height, 
-    InputHandler *inputHandler, 
     Window *window)
 {
     if (!glfwInit()) {
@@ -45,13 +44,14 @@ bool initWindow(
     window->handle = handle;
     window->width = width;
     window->height = height;
-    window->inputHandler = inputHandler;
     window->resizing = false;
+    resetInputHandler(&window->inputHandler);
 
     return true;
 }
 
-void destroyWindow(Window *window){
+void destroyWindow(Window *window)
+{
     glfwDestroyWindow(window->handle);
     glfwTerminate();
 }

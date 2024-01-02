@@ -13,23 +13,24 @@ CameraControls cam_createControls()
         .forward = {0.0f, 0.0f, 1.0f}};
 
     vec3 focus = GLM_VEC3_ZERO_INIT;
-    glm_quat_forp(cam.position, focus, cam.up, cam.globalOri);
-    glm_quat_inv(cam.globalOri, cam.globalOri);
+    glm_quat_forp(cam.position, focus, cam.up, cam.worldOri);
+    glm_quat_inv(cam.worldOri, cam.worldOri);
 
-    cam.rotation_rad_s = glm_rad(90.0f);
+    cam.key_rotation_rad_s = glm_rad(90.0f);
+    cam.mouse_rotation_rad = M_PI;
 
     return cam;
 }
 
 void cam_setInputHandler(CameraControls *cam, InputHandler *handler)
 {
-    handler->ctx = cam;
-    handler->w = &cam_handleKeyW;
-    handler->a = &cam_handleKeyA;
-    handler->s = &cam_handleKeyS;
-    handler->d = &cam_handleKeyD;
-    handler->scroll = &cam_handleMouseScroll;
-    handler->click = &cam_handleMouseClick;
+    handler->context = cam;
+    handler->w = cam_handleKeyW;
+    handler->a = cam_handleKeyA;
+    handler->s = cam_handleKeyS;
+    handler->d = cam_handleKeyD;
+    handler->scroll = cam_handleMouseScroll;
+    handler->click = cam_handleMouseClick;
 }
 
 Matrix4 cam_genViewMatrix(CameraControls *cam)
@@ -41,7 +42,7 @@ Matrix4 cam_genViewMatrix(CameraControls *cam)
     mat4 translation = GLM_MAT4_IDENTITY_INIT;
     glm_translate_make(translation, negPosition);
     mat4 rotation = GLM_MAT4_IDENTITY_INIT;
-    glm_quat_mat4(cam->globalOri, rotation);
+    glm_quat_mat4(cam->worldOri, rotation);
     glm_mat4_mul_sse2(rotation, translation, view.matrix);
 
     return view;
@@ -65,7 +66,7 @@ static s64 orbitCamLaterally(CameraControls *cam, s64 startTimeNs, float rad_s)
     float angle = timeDiff_ns * rad_s / SEC_TO_NS(1);
 
     versor invGlobalOri = {};
-    glm_quat_inv(cam->globalOri, invGlobalOri);
+    glm_quat_inv(cam->worldOri, invGlobalOri);
     vec3 relUp = {};
     glm_quat_rotatev(invGlobalOri, cam->up, relUp);
     glm_vec3_rotate(cam->position, angle, relUp);
@@ -73,7 +74,7 @@ static s64 orbitCamLaterally(CameraControls *cam, s64 startTimeNs, float rad_s)
 
     //Replaces contents of first param
     glm_quatv(invGlobalOri, -1*angle, cam->up);
-    glm_quat_mul_sse2(invGlobalOri, cam->globalOri, cam->globalOri);
+    glm_quat_mul_sse2(invGlobalOri, cam->worldOri, cam->worldOri);
 
     return current_ns;
 }
@@ -88,7 +89,7 @@ static s64 orbitCamLongitudinally(CameraControls *cam, s64 start_ns, float rad_s
     float angle = timeDiff_ns * rad_s / SEC_TO_NS(1);
 
     versor invGlobalOri = {};
-    glm_quat_inv(cam->globalOri, invGlobalOri);
+    glm_quat_inv(cam->worldOri, invGlobalOri);
     vec3 relRight = {};
     glm_quat_rotatev(invGlobalOri, cam->right, relRight);
     glm_vec3_rotate(cam->position, angle, relRight);
@@ -96,18 +97,63 @@ static s64 orbitCamLongitudinally(CameraControls *cam, s64 start_ns, float rad_s
 
     //Replaces contents of first param
     glm_quatv(invGlobalOri, -1*angle, cam->right);
-    glm_quat_mul_sse2(invGlobalOri, cam->globalOri, cam->globalOri);
+    glm_quat_mul_sse2(invGlobalOri, cam->worldOri, cam->worldOri);
 
     return current_ns;
 }
 
-void cam_processInput(CameraControls *cam, GLFWwindow *window)
+void cam_processInput(Window *window)
 {
+    CameraControls *cam = (CameraControls*)window->inputHandler.context;
+
+    static bool leftPressedInit = true;
     if (cam->leftPressed)
     {
-        double cursor_xpos, cursor_ypos = 0.0f;
-        glfwGetCursorPos(window, &cursor_xpos, &cursor_ypos);
-        printf("%.2f, %.2f\n", cursor_xpos, cursor_ypos);
+        static double cursor_xpos, cursor_ypos = 0.0f;
+        if (leftPressedInit)
+        {
+            glfwGetCursorPos(window->handle, &cursor_xpos, &cursor_ypos);
+            leftPressedInit = false;
+        }
+        else
+        {
+            double current_cursor_xpos, current_cursor_ypos = 0.0f;
+            glfwGetCursorPos(window->handle, &current_cursor_xpos, &current_cursor_ypos);
+
+            double xposDiff = current_cursor_xpos - cursor_xpos;
+            double yposDiff = current_cursor_ypos - cursor_ypos;
+
+            double xRotation = cam->mouse_rotation_rad*-1*xposDiff/window->width;
+            double yRotation = cam->mouse_rotation_rad*-1*yposDiff/window->height;
+
+            versor cameraOri = {};
+            glm_quat_inv(cam->worldOri, cameraOri);
+
+            vec3 relUp = {};
+            glm_quat_rotatev(cameraOri, cam->up, relUp);
+            glm_vec3_rotate(cam->position, xRotation, relUp);
+            //printf("{%.2f, %.2f, %.2f}\n", relUp[0], relUp[1], relUp[2]);
+
+            vec3 relRight = {};
+            glm_quat_rotatev(cameraOri, cam->right, relRight);
+            glm_vec3_rotate(cam->position, yRotation, relRight);
+            //printf("{%.2f, %.2f, %.2f}\n", relRight[0], relRight[1], relRight[2]);
+
+            versor invXRotationQuat = {};
+            glm_quatv(invXRotationQuat, -1*xRotation, cam->up);
+            versor invYRotationQuat = {};
+            glm_quatv(invYRotationQuat, -1*yRotation, cam->right);
+            versor invRotationQuat = {};
+            glm_quat_mul_sse2(invYRotationQuat, invXRotationQuat, invRotationQuat);
+            glm_quat_mul_sse2(invRotationQuat, cam->worldOri, cam->worldOri);
+
+            cursor_xpos = current_cursor_xpos;
+            cursor_ypos = current_cursor_ypos;
+        }
+    }
+    else
+    {
+        leftPressedInit = true;
     }
 
     if (cam->wPressed)
@@ -115,7 +161,7 @@ void cam_processInput(CameraControls *cam, GLFWwindow *window)
         if (!cam->wPressedStart_ns)
             cam->wPressedStart_ns = getCurrentTime_ns();
         else
-            cam->wPressedStart_ns = orbitCamLongitudinally(cam, cam->wPressedStart_ns, -1*cam->rotation_rad_s);
+            cam->wPressedStart_ns = orbitCamLongitudinally(cam, cam->wPressedStart_ns, -1*cam->key_rotation_rad_s);
     }
     else
     {
@@ -127,7 +173,7 @@ void cam_processInput(CameraControls *cam, GLFWwindow *window)
         if (!cam->aPressedStart_ns)
             cam->aPressedStart_ns = getCurrentTime_ns();
         else
-            cam->aPressedStart_ns = orbitCamLaterally(cam, cam->aPressedStart_ns, -1*cam->rotation_rad_s);
+            cam->aPressedStart_ns = orbitCamLaterally(cam, cam->aPressedStart_ns, -1*cam->key_rotation_rad_s);
     }
     else
     {
@@ -138,7 +184,7 @@ void cam_processInput(CameraControls *cam, GLFWwindow *window)
         if (!cam->sPressedStart_ns)
             cam->sPressedStart_ns = getCurrentTime_ns();
         else
-            cam->sPressedStart_ns = orbitCamLongitudinally(cam, cam->sPressedStart_ns, cam->rotation_rad_s);
+            cam->sPressedStart_ns = orbitCamLongitudinally(cam, cam->sPressedStart_ns, cam->key_rotation_rad_s);
     }
     else
         cam->sPressedStart_ns = 0;
@@ -147,7 +193,7 @@ void cam_processInput(CameraControls *cam, GLFWwindow *window)
         if (!cam->dPressedStart_ns)
             cam->dPressedStart_ns = getCurrentTime_ns();
         else
-            cam->dPressedStart_ns = orbitCamLaterally(cam, cam->dPressedStart_ns, cam->rotation_rad_s);
+            cam->dPressedStart_ns = orbitCamLaterally(cam, cam->dPressedStart_ns, cam->key_rotation_rad_s);
     }
     else 
         cam->dPressedStart_ns = 0;
@@ -227,13 +273,11 @@ void cam_handleMouseClick(void *ctx, GLFWwindow *window, int button, int action,
     {
         if (action == GLFW_PRESS)
         {
-            printf("Click\n");
             cam->leftPressed = true;
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         }
         else if (action == GLFW_RELEASE)
         {
-            printf("Release\n");
             cam->leftPressed = false;
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         }

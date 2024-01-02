@@ -7,7 +7,7 @@ typedef struct Window{
     GLFWwindow *handle;
     int width;
     int height;
-    InputHandler *inputHandler;
+    InputHandler inputHandler;
     bool resizing;
 } Window;
 
@@ -15,6 +15,5 @@ bool initWindow(
     const char *title, 
     size_t width, 
     size_t height, 
-    InputHandler *inputHandler, 
     Window *window);
 void destroyWindow(Window *window);

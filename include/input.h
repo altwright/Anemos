@@ -6,7 +6,7 @@ typedef void (*HandleMouseScroll)(void *ctx, double offset);
 typedef void (*HandleMouseClick)(void *ctx, GLFWwindow *window, int button, int action, int mods);
 
 typedef struct InputHandler {
-    void *ctx;
+    void *context;
     HandleKey w;
     HandleKey a;
     HandleKey s;

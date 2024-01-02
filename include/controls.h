@@ -4,13 +4,13 @@
 
 typedef struct CameraControls{
     vec3 position;
-    versor globalOri;
-    vec3 right;
-    vec3 up;
-    vec3 forward;
-    float rotation_rad_s;
+    versor worldOri;//Orientation of the world around the camera, with the camera as the fixed reference point
+    vec3 right;//Reference right direction
+    vec3 up;//Reference up direction
+    vec3 forward;//Reference forward direction
+    float key_rotation_rad_s;//rotation per second key pressed
+    float mouse_rotation_rad;//rotation per fullscreen mouse drag
 
-    double cursor_xpos, cursor_ypos;
     bool leftPressed;
 
     bool wPressed;
@@ -27,7 +27,7 @@ CameraControls cam_createControls();
 Matrix4 cam_genProjectionMatrix(CameraControls *cam, VkExtent2D renderArea);
 Matrix4 cam_genViewMatrix(CameraControls *cam);
 
-void cam_processInput(CameraControls *cam, GLFWwindow *window);
+void cam_processInput(Window *window);
 void cam_setInputHandler(CameraControls *cam, InputHandler *handler);
 void cam_handleKeyW(void *ctx, int action, int mods);
 void cam_handleKeyA(void *ctx, int action, int mods);

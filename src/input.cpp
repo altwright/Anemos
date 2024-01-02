@@ -4,8 +4,8 @@
 void mouseButtonInputCallback(GLFWwindow* handle, int button, int action, int mods)
 {
     Window *window = (Window*)glfwGetWindowUserPointer(handle);
-    InputHandler *handler = window->inputHandler;
-    void *context = handler->ctx;
+    InputHandler *handler = &window->inputHandler;
+    void *context = handler->context;
 
     handler->click(context, handle, button, action, mods);
 }
@@ -13,8 +13,8 @@ void mouseButtonInputCallback(GLFWwindow* handle, int button, int action, int mo
 void mouseScrollInputCallback(GLFWwindow* handle, double xoffset, double yoffset)
 {
     Window *window = (Window*)glfwGetWindowUserPointer(handle);
-    InputHandler *handler = window->inputHandler;
-    void *context = handler->ctx;
+    InputHandler *handler = &window->inputHandler;
+    void *context = handler->context;
 
     handler->scroll(context, yoffset);
 }
@@ -22,8 +22,8 @@ void mouseScrollInputCallback(GLFWwindow* handle, double xoffset, double yoffset
 void keyInputCallback(GLFWwindow* handle, int key, int scancode, int action, int mods)
 {
     Window *window = (Window*)glfwGetWindowUserPointer(handle);
-    InputHandler *handler = window->inputHandler;
-    void *context = handler->ctx;
+    InputHandler *handler = &window->inputHandler;
+    void *context = handler->context;
 
     switch (key)
     {
@@ -50,7 +50,7 @@ static void dropMouseClick(void *ctx, GLFWwindow *window, int button, int action
 
 void resetInputHandler(InputHandler *handler)
 {
-    handler->ctx = NULL;
+    handler->context = NULL;
     handler->w = dropKey;
     handler->a = dropKey;
     handler->s = dropKey;

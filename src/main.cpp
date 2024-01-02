@@ -20,15 +20,11 @@ int main(int, char**)
         exit(EXIT_FAILURE);
     }
 
-    InputHandler inputHandler = {};
-    resetInputHandler(&inputHandler);
-
     Window window = {};
     if (!initWindow(
         TITLE, 
         userConfig.window.width, 
         userConfig.window.height, 
-        &inputHandler, 
         &window))
     {
         fprintf(stderr, "Failed to create GLFW window!\n");
@@ -59,7 +55,7 @@ int main(int, char**)
         vk.transferQueue);
 
     CameraControls cam = cam_createControls();
-    cam_setInputHandler(&cam, &inputHandler);
+    cam_setInputHandler(&cam, &window.inputHandler);
 
     DescriptorSets descriptorSets = allocateDescriptorSets(vk.device, vk.descriptorSetLayout, vk.descriptorPool);
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
@@ -84,7 +80,7 @@ int main(int, char**)
     u32 currentFrame = 0;
     while (!glfwWindowShouldClose(window.handle))
     {
-        cam_processInput(&cam, window.handle);
+        cam_processInput(&window);
 
         vkWaitForFences(vk.device, 1, &vk.frameSyncers[currentFrame].inFlight, VK_TRUE, UINT64_MAX);
 
