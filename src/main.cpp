@@ -84,7 +84,7 @@ int main(int, char**)
     u32 currentFrame = 0;
     while (!glfwWindowShouldClose(window.handle))
     {
-        cam_processInput(&cam);
+        cam_processInput(&cam, window.handle);
 
         vkWaitForFences(vk.device, 1, &vk.frameSyncers[currentFrame].inFlight, VK_TRUE, UINT64_MAX);
 

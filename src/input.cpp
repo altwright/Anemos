@@ -1,6 +1,15 @@
 #include "input.h"
 #include "window.h"
 
+void mouseButtonInputCallback(GLFWwindow* handle, int button, int action, int mods)
+{
+    Window *window = (Window*)glfwGetWindowUserPointer(handle);
+    InputHandler *handler = window->inputHandler;
+    void *context = handler->ctx;
+
+    handler->click(context, handle, button, action, mods);
+}
+
 void mouseScrollInputCallback(GLFWwindow* handle, double xoffset, double yoffset)
 {
     Window *window = (Window*)glfwGetWindowUserPointer(handle);
@@ -37,6 +46,7 @@ void keyInputCallback(GLFWwindow* handle, int key, int scancode, int action, int
 
 static void dropKey(void *ctx, int action, int mods){};
 static void dropMouseScroll(void *ctx, double offset){};
+static void dropMouseClick(void *ctx, GLFWwindow *window, int button, int action, int mods){};
 
 void resetInputHandler(InputHandler *handler)
 {
@@ -46,4 +56,5 @@ void resetInputHandler(InputHandler *handler)
     handler->s = dropKey;
     handler->d = dropKey;
     handler->scroll = dropMouseScroll;
+    handler->click = dropMouseClick;
 }

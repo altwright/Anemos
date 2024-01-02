@@ -13,11 +13,10 @@ CameraControls cam_createControls()
         .forward = {0.0f, 0.0f, 1.0f}};
 
     vec3 focus = GLM_VEC3_ZERO_INIT;
-    vec3 up = {0.0f, 0.0f, 1.0f};
-    glm_quat_forp(cam.position, focus, up, cam.globalOri);
+    glm_quat_forp(cam.position, focus, cam.up, cam.globalOri);
     glm_quat_inv(cam.globalOri, cam.globalOri);
 
-    cam.rad_s = glm_rad(90.0f);
+    cam.rotation_rad_s = glm_rad(90.0f);
 
     return cam;
 }
@@ -30,6 +29,7 @@ void cam_setInputHandler(CameraControls *cam, InputHandler *handler)
     handler->s = &cam_handleKeyS;
     handler->d = &cam_handleKeyD;
     handler->scroll = &cam_handleMouseScroll;
+    handler->click = &cam_handleMouseClick;
 }
 
 Matrix4 cam_genViewMatrix(CameraControls *cam)
@@ -101,31 +101,44 @@ static s64 orbitCamLongitudinally(CameraControls *cam, s64 start_ns, float rad_s
     return current_ns;
 }
 
-void cam_processInput(CameraControls *cam)
+void cam_processInput(CameraControls *cam, GLFWwindow *window)
 {
-    if (cam->wPressed){
+    if (cam->leftPressed)
+    {
+        double cursor_xpos, cursor_ypos = 0.0f;
+        glfwGetCursorPos(window, &cursor_xpos, &cursor_ypos);
+        printf("%.2f, %.2f\n", cursor_xpos, cursor_ypos);
+    }
+
+    if (cam->wPressed)
+    {
         if (!cam->wPressedStart_ns)
             cam->wPressedStart_ns = getCurrentTime_ns();
         else
-            cam->wPressedStart_ns = orbitCamLongitudinally(cam, cam->wPressedStart_ns, -1*cam->rad_s);
+            cam->wPressedStart_ns = orbitCamLongitudinally(cam, cam->wPressedStart_ns, -1*cam->rotation_rad_s);
     }
     else
+    {
         cam->wPressedStart_ns = 0;
+    }
 
-    if (cam->aPressed){
+    if (cam->aPressed)
+    {
         if (!cam->aPressedStart_ns)
             cam->aPressedStart_ns = getCurrentTime_ns();
         else
-            cam->aPressedStart_ns = orbitCamLaterally(cam, cam->aPressedStart_ns, -1*cam->rad_s);
+            cam->aPressedStart_ns = orbitCamLaterally(cam, cam->aPressedStart_ns, -1*cam->rotation_rad_s);
     }
-    else 
+    else
+    {
         cam->aPressedStart_ns = 0;
+    }
 
     if (cam->sPressed){
         if (!cam->sPressedStart_ns)
             cam->sPressedStart_ns = getCurrentTime_ns();
         else
-            cam->sPressedStart_ns = orbitCamLongitudinally(cam, cam->sPressedStart_ns, cam->rad_s);
+            cam->sPressedStart_ns = orbitCamLongitudinally(cam, cam->sPressedStart_ns, cam->rotation_rad_s);
     }
     else
         cam->sPressedStart_ns = 0;
@@ -134,10 +147,11 @@ void cam_processInput(CameraControls *cam)
         if (!cam->dPressedStart_ns)
             cam->dPressedStart_ns = getCurrentTime_ns();
         else
-            cam->dPressedStart_ns = orbitCamLaterally(cam, cam->dPressedStart_ns, cam->rad_s);
+            cam->dPressedStart_ns = orbitCamLaterally(cam, cam->dPressedStart_ns, cam->rotation_rad_s);
     }
     else 
         cam->dPressedStart_ns = 0;
+
 }
 
 void cam_handleKeyW(void *ctx, int action, int mods)
@@ -203,4 +217,34 @@ void cam_handleMouseScroll(void *ctx, double offset)
     {
         glm_vec3_add(zoomOffset, cam->position, cam->position);
     }
+}
+
+void cam_handleMouseClick(void *ctx, GLFWwindow *window, int button, int action, int mods)
+{
+    CameraControls *cam = (CameraControls*)ctx;
+
+    if (button == GLFW_MOUSE_BUTTON_LEFT)
+    {
+        if (action == GLFW_PRESS)
+        {
+            printf("Click\n");
+            cam->leftPressed = true;
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        }
+        else if (action == GLFW_RELEASE)
+        {
+            printf("Release\n");
+            cam->leftPressed = false;
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        }
+    }
+    else if (button == GLFW_MOUSE_BUTTON_RIGHT)
+    {
+
+    }
+    else if (button == GLFW_MOUSE_BUTTON_MIDDLE)
+    {
+
+    }
+
 }

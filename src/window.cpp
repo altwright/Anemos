@@ -37,8 +37,10 @@ bool initWindow(
     glfwSetWindowUserPointer(handle, window);
     glfwSetFramebufferSizeCallback(handle, framebufferResizeCallback);
     glfwSetInputMode(handle, GLFW_STICKY_KEYS, GLFW_TRUE);
+    glfwSetInputMode(handle, GLFW_STICKY_MOUSE_BUTTONS, GLFW_TRUE);
     glfwSetKeyCallback(handle, keyInputCallback);
     glfwSetScrollCallback(handle, mouseScrollInputCallback);
+    glfwSetMouseButtonCallback(handle, mouseButtonInputCallback);
 
     window->handle = handle;
     window->width = width;
