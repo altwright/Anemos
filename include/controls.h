@@ -2,12 +2,14 @@
 #include <cglm/cglm.h>
 #include "vkshader.h"
 
+extern vec3 REF_UP;
+extern vec3 REF_RIGHT;
+
 typedef struct CameraControls{
     vec3 position;
-    versor worldOri;//Orientation of the world around the camera, with the camera as the fixed reference point
-    vec3 right;//Reference right direction
-    vec3 up;//Reference up direction
-    vec3 forward;//Reference forward direction
+    vec3 focus;
+    versor ori;//Orientation of the world around the camera, with the camera as the fixed reference point
+
     float key_rotation_rad_s;//rotation per second key pressed
     float mouse_rotation_rad;//rotation per fullscreen mouse drag
 
