@@ -10,7 +10,6 @@
 #include "vkmemory.h"
 #include "vkattachment.h"
 #include "vkpipeline.h"
-#include "vkbuffer.h"
 
 VulkanState initVulkanState(Window *window, const UserConfig *config)
 {

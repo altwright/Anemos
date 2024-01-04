@@ -5,7 +5,7 @@
 #include "config.h"
 #include "vkstate.h"
 #include "model.h"
-#include "vkbuffer.h"
+#include "vkmemory.h"
 #include "vkswapchain.h"
 #include "vkcommand.h"
 #include "vkshader.h"
@@ -40,9 +40,10 @@ int main(int, char**)
         graphicsCmdBuffers[i] = createPrimaryCommandBuffer(vk.device, vk.graphicsCmdPools[i]);
     }
 
-    unsigned char *mappedBuffer = (unsigned char*)vk.stagingBuffer.info.pMappedData;
+    u8 *mappedBuffer = (u8*)vk.stagingBuffer.info.pMappedData;
     ModelInfo modelInfo = loadModelIntoStagingBuffer("./models/dead_cube.glb", mappedBuffer);
-    size_t modelDataSize = modelInfo.verticesDataSize + 
+    size_t modelDataSize = 
+        modelInfo.verticesDataSize + 
         modelInfo.indicesDataSize + 
         modelInfo.texCoordDataSize + 
         modelInfo.texWidth * modelInfo.texHeight * modelInfo.texChannels;
