@@ -37,4 +37,4 @@ VkShaderModule createShaderModule(VkDevice device, uint32_t *code, size_t numByt
 VkDescriptorSetLayout createDescriptorSetLayout(VkDevice device);
 VkDescriptorPool createDescriptorPool(VkDevice device);
 DescriptorSets allocateDescriptorSets(VkDevice device, VkDescriptorSetLayout layout, VkDescriptorPool pool);
-void updateUniformBuffer(Buffer *uniformBuffer, VkDeviceSize offset, Model *model);
+void updateUniformBuffer(Buffer *uniformBuffer, VkDeviceSize offset, ModelInfo *model);

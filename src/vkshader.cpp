@@ -67,7 +67,7 @@ DescriptorSets allocateDescriptorSets(VkDevice device, VkDescriptorSetLayout lay
     return sets;
 }
 
-void updateUniformBuffer(Buffer *uniformBuffer, VkDeviceSize offset, Model *model)
+void updateUniformBuffer(Buffer *uniformBuffer, VkDeviceSize offset, ModelInfo *model)
 {
     unsigned char *mappedBuffer = (unsigned char*)uniformBuffer->info.pMappedData + offset;
     memcpy(mappedBuffer, model->worldMatrix, sizeof(mat4));

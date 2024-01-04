@@ -15,7 +15,8 @@
 int main(int, char**)
 {
     UserConfig userConfig = {};
-    if (!loadUserConfig(CONFIG_FILE, &userConfig)){
+    if (!loadUserConfig(CONFIG_FILE, &userConfig))
+    {
         fprintf(stderr, "Failed to load complete user config\n");
         exit(EXIT_FAILURE);
     }
@@ -27,38 +28,36 @@ int main(int, char**)
         userConfig.window.height, 
         &window))
     {
-        fprintf(stderr, "Failed to create GLFW window!\n");
+        fprintf(stderr, "Failed to create Window!\n");
         exit(EXIT_FAILURE);
     }
 
     VulkanState vk = initVulkanState(&window, &userConfig);
 
     VkCommandBuffer graphicsCmdBuffers[MAX_FRAMES_IN_FLIGHT] = {};
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    {
         graphicsCmdBuffers[i] = createPrimaryCommandBuffer(vk.device, vk.graphicsCmdPools[i]);
     }
 
-    Model cube = loadModel("./models/cube.glb");
-    size_t bytesCount = 0;
     unsigned char *mappedBuffer = (unsigned char*)vk.stagingBuffer.info.pMappedData;
-    memcpy(mappedBuffer, cube.vertices, sizeof(Vertex)*cube.verticesCount);
-    bytesCount += sizeof(Vertex)*cube.verticesCount;
-    mappedBuffer += bytesCount;
-    memcpy(mappedBuffer, cube.indices, sizeof(u16)*cube.indicesCount);
-    bytesCount += sizeof(u16)*cube.indicesCount;
+    ModelInfo modelInfo = loadModelIntoStagingBuffer("./models/dead_cube.glb", mappedBuffer);
+    size_t modelDataSize = modelInfo.verticesDataSize + 
+        modelInfo.indicesDataSize + 
+        modelInfo.texCoordDataSize + 
+        modelInfo.texWidth * modelInfo.texHeight * modelInfo.texChannels;
+
     copyToDeviceBuffer(
-        bytesCount, 
+        modelDataSize,
         vk.stagingBuffer.handle, 0, 
         vk.deviceBuffer.handle, 0, 
         vk.device, 
         vk.transferCommandPool, 
         vk.transferQueue);
 
-    CameraControls cam = cam_createControls();
-    cam_setInputHandler(&cam, &window.inputHandler);
-
     DescriptorSets descriptorSets = allocateDescriptorSets(vk.device, vk.descriptorSetLayout, vk.descriptorPool);
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    {
         VkDescriptorBufferInfo uniformBufferInfo = {};
         uniformBufferInfo.buffer = vk.uniformBuffer.handle;
         uniformBufferInfo.offset = i*vk.physicalDevice.deviceProperties.limits.minUniformBufferOffsetAlignment;
@@ -74,6 +73,9 @@ int main(int, char**)
 
         vkUpdateDescriptorSets(vk.device, 1, &descriptorWrite, 0, NULL);
     }
+
+    CameraControls cam = cam_createControls();
+    cam_setInputHandler(&cam, &window.inputHandler);
 
     PushConstant pushConstant = {};
     Matrix4 projection = cam_genProjectionMatrix(&cam, vk.swapchain.extent);
@@ -120,7 +122,10 @@ int main(int, char**)
 
         Matrix4 view = cam_genViewMatrix(&cam);
         glm_mat4_mul_sse2(projection.matrix, view.matrix, pushConstant.viewProjection);
-        updateUniformBuffer(&vk.uniformBuffer, currentFrame*vk.physicalDevice.deviceProperties.limits.minUniformBufferOffsetAlignment, &cube);
+        updateUniformBuffer(
+            &vk.uniformBuffer, 
+            currentFrame*vk.physicalDevice.deviceProperties.limits.minUniformBufferOffsetAlignment, 
+            &modelInfo);
 
         recordModelDrawCommand(
             graphicsCmdBuffers[currentFrame],
@@ -131,8 +136,8 @@ int main(int, char**)
             pushConstant,
             descriptorSets.handles[currentFrame],
             vk.deviceBuffer.handle,
-            0, cube.verticesCount,
-            sizeof(Vertex)*cube.verticesCount, cube.indicesCount);
+            0, modelInfo.verticesCount,
+            modelInfo.verticesDataSize, modelInfo.indicesCount);
 
         submitDrawCommand(
             vk.graphicsQueue,
@@ -167,7 +172,8 @@ int main(int, char**)
             projection = cam_genProjectionMatrix(&cam, vk.swapchain.extent);
             window.resizing = false;
         }
-        else if (result != VK_SUCCESS){
+        else if (result != VK_SUCCESS)
+        {
             printf("Failed to Present Swapchain Image\n");
             exit(EXIT_FAILURE);
         }
@@ -178,8 +184,6 @@ int main(int, char**)
     }
 
     vkDeviceWaitIdle(vk.device);
-
-    freeModel(&cube);
 
     destroyWindow(&window);
     destroyVulkanState(&vk);
