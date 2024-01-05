@@ -60,7 +60,6 @@ VulkanState initVulkanState(Window *window, const UserConfig *config)
     vk.uniformBuffer = createUniformBuffer(vk.allocator, 1 << 26);
 
     vk.sampler = createSampler(vk.device, vk.physicalDevice.properties.limits.maxSamplerAnisotropy);
-    printf("%f\n", vk.physicalDevice.properties.limits.maxSamplerAnisotropy);
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
         vk.frameSyncers[i] = createFrameSynchroniser(vk.device);

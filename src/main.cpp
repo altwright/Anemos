@@ -34,7 +34,7 @@ int main(int, char**)
 
     VulkanState vk = initVulkanState(&window, &userConfig);
 
-    ModelInfo modelInfo = loadModelIntoStagingBuffer("./models/dead_cube.glb", (u8*)vk.stagingBuffer.info.pMappedData);
+    ModelInfo modelInfo = loadModelIntoStagingBuffer("./models/pompeii.glb", (u8*)vk.stagingBuffer.info.pMappedData);
     size_t modelDataSize = 
         modelInfo.verticesDataSize + 
         modelInfo.texCoordDataSize +
@@ -48,7 +48,11 @@ int main(int, char**)
         vk.transferCommandPool, 
         vk.transferQueue);
 
-    Texture deviceTexture = createDeviceTexture(vk.device, vk.allocator, modelInfo.texWidth, modelInfo.texHeight, modelInfo.texChannels);
+    Texture deviceTexture = createDeviceTexture(
+        vk.device, 
+        vk.allocator, 
+        modelInfo.texWidth, modelInfo.texHeight);
+
     copyToDeviceTexture(
         vk.device,
         deviceTexture.handle,
@@ -56,8 +60,7 @@ int main(int, char**)
         modelDataSize,
         modelInfo.texWidth, modelInfo.texHeight,
         vk.graphicsCmdPools[0],
-        vk.graphicsQueue
-    );
+        vk.graphicsQueue);
 
     DescriptorSets descriptorSets = allocateDescriptorSets(vk.device, vk.descriptorSetLayout, vk.descriptorPool);
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -98,7 +101,6 @@ int main(int, char**)
     {
         graphicsCmdBuffers[i] = createPrimaryCommandBuffer(vk.device, vk.graphicsCmdPools[i]);
     }
-
 
     CameraControls cam = cam_createControls();
     cam_setInputHandler(&cam, &window.inputHandler);

@@ -8,7 +8,7 @@ VkSampler createSampler(VkDevice device, float maxAnisotropy);
 Texture createDeviceTexture(
     VkDevice device, 
     VmaAllocator allocator, 
-    size_t texWidth, size_t texHeight, size_t texChannel);
+    size_t texWidth, size_t texHeight);
 Buffer createDeviceBuffer(
     VmaAllocator allocator,
     VkDeviceSize bufferSize);
