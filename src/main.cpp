@@ -34,6 +34,31 @@ int main(int, char**)
 
     VulkanState vk = initVulkanState(&window, &userConfig);
 
+    ModelInfo modelInfo = loadModelIntoStagingBuffer("./models/dead_cube.glb", (u8*)vk.stagingBuffer.info.pMappedData);
+    size_t modelDataSize = 
+        modelInfo.verticesDataSize + 
+        modelInfo.texCoordDataSize +
+        modelInfo.indicesDataSize;
+
+    copyToDeviceBuffer(
+        modelDataSize,
+        vk.stagingBuffer.handle, 0, 
+        vk.deviceBuffer.handle, 0, 
+        vk.device, 
+        vk.transferCommandPool, 
+        vk.transferQueue);
+
+    Texture deviceTexture = createDeviceTexture(vk.device, vk.allocator, modelInfo.texWidth, modelInfo.texHeight, modelInfo.texChannels);
+    copyToDeviceTexture(
+        vk.device,
+        deviceTexture.handle,
+        vk.stagingBuffer.handle,
+        modelDataSize,
+        modelInfo.texWidth, modelInfo.texHeight,
+        vk.graphicsCmdPools[0],
+        vk.graphicsQueue
+    );
+
     DescriptorSets descriptorSets = allocateDescriptorSets(vk.device, vk.descriptorSetLayout, vk.descriptorPool);
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
@@ -44,8 +69,8 @@ int main(int, char**)
 
         VkDescriptorImageInfo textureInfo = {};
         textureInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        textureInfo.imageView = vk.deviceTexture.view;
-        textureInfo.sampler = vk.deviceTexture.sampler;
+        textureInfo.imageView = deviceTexture.view;
+        textureInfo.sampler = vk.sampler;
 
         VkWriteDescriptorSet ubDescriptorWrite = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         ubDescriptorWrite.dstSet = descriptorSets.handles[i];
@@ -74,29 +99,6 @@ int main(int, char**)
         graphicsCmdBuffers[i] = createPrimaryCommandBuffer(vk.device, vk.graphicsCmdPools[i]);
     }
 
-    ModelInfo modelInfo = loadModelIntoStagingBuffer("./models/dead_cube.glb", (u8*)vk.stagingBuffer.info.pMappedData);
-    size_t modelDataSize = 
-        modelInfo.verticesDataSize + 
-        modelInfo.texCoordDataSize +
-        modelInfo.indicesDataSize;
-
-    copyToDeviceBuffer(
-        modelDataSize,
-        vk.stagingBuffer.handle, 0, 
-        vk.deviceBuffer.handle, 0, 
-        vk.device, 
-        vk.transferCommandPool, 
-        vk.transferQueue);
-
-    copyToDeviceTexture(
-        vk.device,
-        vk.deviceTexture.handle,
-        vk.stagingBuffer.handle,
-        modelDataSize,
-        modelInfo.texWidth, modelInfo.texHeight,
-        vk.graphicsCmdPools[0],
-        vk.graphicsQueue
-    );
 
     CameraControls cam = cam_createControls();
     cam_setInputHandler(&cam, &window.inputHandler);
@@ -208,6 +210,9 @@ int main(int, char**)
     }
 
     vkDeviceWaitIdle(vk.device);
+
+    vkDestroyImageView(vk.device, deviceTexture.view, NULL);
+    vmaDestroyImage(vk.allocator, deviceTexture.handle, deviceTexture.alloc);
 
     destroyWindow(&window);
     destroyVulkanState(&vk);

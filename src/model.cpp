@@ -92,6 +92,11 @@ ModelInfo loadModelIntoStagingBuffer(const char *glbFilePath, u8 *mappedStagingB
         mappedStagingBuffer += sizeof(vec3);
         memcpy(mappedStagingBuffer, texCoordData + i*sizeof(vec2), sizeof(vec2));
         mappedStagingBuffer += sizeof(vec2);
+
+        /*float *position = (float*)&positionsData[i*sizeof(vec3)];
+        float *texCoord = (float*)&texCoordData[i*sizeof(vec2)];
+        printf("{%f, %f, %f}, {%f, %f}\n", position[0], position[1], position[2], texCoord[0], texCoord[1]);
+        */
     }
 
     memcpy(mappedStagingBuffer, indicesData, modelInfo.indicesDataSize);

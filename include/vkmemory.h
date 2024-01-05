@@ -4,11 +4,11 @@
 #include "vkstate.h"
 
 VmaAllocator createAllocator(VkDevice device, VkInstance instance, VkPhysicalDevice physicalDevice);
+VkSampler createSampler(VkDevice device, float maxAnisotropy);
 Texture createDeviceTexture(
     VkDevice device, 
     VmaAllocator allocator, 
-    size_t texWidth, size_t texHeight, size_t texChannel,
-    float maxAnisotropy);
+    size_t texWidth, size_t texHeight, size_t texChannel);
 Buffer createDeviceBuffer(
     VmaAllocator allocator,
     VkDeviceSize bufferSize);

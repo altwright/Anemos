@@ -48,7 +48,6 @@ typedef struct {
     VmaAllocation alloc;
     VmaAllocationInfo info;
     VkImageView view;
-    VkSampler sampler;
 } Texture;
 
 typedef struct {
@@ -86,12 +85,11 @@ typedef struct {
     VkCommandPool graphicsCmdPools[MAX_FRAMES_IN_FLIGHT];
     VkCommandPool transferCommandPool;
     FrameSynchroniser frameSyncers[MAX_FRAMES_IN_FLIGHT];
+    VkSampler sampler;
 
     Buffer deviceBuffer;
     Buffer stagingBuffer;
     Buffer uniformBuffer;
-
-    Texture deviceTexture;
 } VulkanState;
 
 VulkanState initVulkanState(Window *window, const UserConfig *config);
