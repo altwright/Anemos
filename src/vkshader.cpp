@@ -14,9 +14,17 @@ VkDescriptorSetLayout createDescriptorSetLayout(VkDevice device)
     ubBinding.descriptorCount = 1;//Specifies num elements in array
     ubBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
+    VkDescriptorSetLayoutBinding samplerBinding = {};
+    samplerBinding.binding = 1;
+    samplerBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    samplerBinding.descriptorCount = 1;
+    samplerBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    VkDescriptorSetLayoutBinding bindings[2] = {ubBinding, samplerBinding};
+
     VkDescriptorSetLayoutCreateInfo layoutInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
-    layoutInfo.bindingCount = 1;
-    layoutInfo.pBindings = &ubBinding;
+    layoutInfo.bindingCount = 2;
+    layoutInfo.pBindings = bindings;
 
     VkDescriptorSetLayout layout = {};
     if (vkCreateDescriptorSetLayout(device, &layoutInfo, NULL, &layout)){
@@ -31,12 +39,18 @@ VkDescriptorPool createDescriptorPool(VkDevice device)
 {
     VkDescriptorPoolSize ubPoolSize = {};
     ubPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    ubPoolSize.descriptorCount = MAX_FRAMES_IN_FLIGHT;//Max descriptors, shared between the sets
+    ubPoolSize.descriptorCount = MAX_FRAMES_IN_FLIGHT;//Max descriptors, distributed between the sets
+
+    VkDescriptorPoolSize samplerPoolSize = {};
+    samplerPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    samplerPoolSize.descriptorCount = MAX_FRAMES_IN_FLIGHT;
+
+    VkDescriptorPoolSize poolSizes[2] = {ubPoolSize, samplerPoolSize};
 
     VkDescriptorPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    poolInfo.poolSizeCount = 1;
-    poolInfo.pPoolSizes = &ubPoolSize;
+    poolInfo.poolSizeCount = 2;
+    poolInfo.pPoolSizes = poolSizes;
     poolInfo.maxSets = MAX_FRAMES_IN_FLIGHT;
 
     VkDescriptorPool descriptorPool = NULL;

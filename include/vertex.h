@@ -4,17 +4,16 @@
 #include "int.h"
 #include "vkstate.h"
 
-#define VERTEX_ATTRIBUTE_COUNT 1
+#define VERTEX_ATTRIBUTE_COUNT 2
 
-typedef struct Vertex{
+typedef struct VertexAttributes{
     vec3 position;
-} Vertex;
+    vec2 texCoord;
+} VertexAttributes;
 
-typedef struct VertexInputAttributes{
-    VkVertexInputAttributeDescription descriptions[VERTEX_ATTRIBUTE_COUNT];
-} VertexInputAttributes;
+typedef struct VertexInputAttributeDescriptions{
+    VkVertexInputAttributeDescription descs[VERTEX_ATTRIBUTE_COUNT];
+} VertexInputAttributeDescriptions;
 
 VkVertexInputBindingDescription getVertexBindingDescription();
-VertexInputAttributes getVertexInputAttributes();
-void copyVerticesToStagingBuffer(VkDevice device, Buffer vertexBuffer, VkDeviceSize offset, const Vertex *vertices, size_t verticesCount);
-void copyIndicesToStagingBuffer(VkDevice device, Buffer indexBuffer, VkDeviceSize offset, const u16 *indices, size_t indicesCount);
+VertexInputAttributeDescriptions getVertexInputAttributes();

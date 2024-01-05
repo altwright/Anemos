@@ -4,10 +4,11 @@
 #include <assert.h>
 #include "vkstate.h"
 
-VkVertexInputBindingDescription getVertexBindingDescription(){
+VkVertexInputBindingDescription getVertexBindingDescription()
+{
     VkVertexInputBindingDescription bindingDesc = {};
     bindingDesc.binding = 0;
-    bindingDesc.stride = sizeof(Vertex);
+    bindingDesc.stride = sizeof(vec3) + sizeof(vec2); //Interleaved vertices + texCoords
     bindingDesc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
     //All of our per-vertex data is packed together in one array, 
     //so we’re only going to have one binding. The binding parameter 
@@ -16,20 +17,19 @@ VkVertexInputBindingDescription getVertexBindingDescription(){
     return bindingDesc;
 }
 
-VertexInputAttributes getVertexInputAttributes(){
-    VertexInputAttributes attributes = {};
+VertexInputAttributeDescriptions getVertexInputAttributes()
+{
+    VertexInputAttributeDescriptions attributes = {};
 
-    attributes.descriptions[0].binding = 0;
-    attributes.descriptions[0].location = 0;
-    attributes.descriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attributes.descriptions[0].offset = offsetof(Vertex, position);
+    attributes.descs[0].binding = 0;
+    attributes.descs[0].location = 0;
+    attributes.descs[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+    attributes.descs[0].offset = offsetof(VertexAttributes, position);
 
-/*
-    attributes.descriptions[1].binding = 0;
-    attributes.descriptions[1].location = 1;
-    attributes.descriptions[1].format = VK_FORMAT_R32G32_SFLOAT;
-    attributes.descriptions[1].offset = offsetof(Vertex, texCoord);
-*/
+    attributes.descs[1].binding = 0;
+    attributes.descs[1].location = 1;
+    attributes.descs[1].format = VK_FORMAT_R32G32_SFLOAT;
+    attributes.descs[1].offset = offsetof(VertexAttributes, texCoord);
 
     return attributes;
 }

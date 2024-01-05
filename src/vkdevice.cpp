@@ -213,15 +213,15 @@ PhysicalDeviceDetails selectPhysicalDevice(VkInstance instance, VkSurfaceKHR sur
 
     PhysicalDeviceDetails physicalDeviceDetails = {};
     physicalDeviceDetails.handle = selectedDevice;
-    vkGetPhysicalDeviceProperties(physicalDeviceDetails.handle, &physicalDeviceDetails.deviceProperties);
+    vkGetPhysicalDeviceProperties(physicalDeviceDetails.handle, &physicalDeviceDetails.properties);
     physicalDeviceDetails.queueFamilyIndices = findQueueFamilyIndices(physicalDeviceDetails.handle, surface);
 
     #ifndef NDEBUG
-    printf("Selected GPU: %s\n", &physicalDeviceDetails.deviceProperties.deviceName);
+    printf("Selected GPU: %s\n", &physicalDeviceDetails.properties.deviceName);
     #endif
 
-    VkSampleCountFlags maxSamplingCount = physicalDeviceDetails.deviceProperties.limits.framebufferColorSampleCounts &
-        physicalDeviceDetails.deviceProperties.limits.framebufferDepthSampleCounts;
+    VkSampleCountFlags maxSamplingCount = physicalDeviceDetails.properties.limits.framebufferColorSampleCounts &
+        physicalDeviceDetails.properties.limits.framebufferDepthSampleCounts;
 
     if (maxSamplingCount & VK_SAMPLE_COUNT_64_BIT){
         physicalDeviceDetails.maxSamplingCount = VK_SAMPLE_COUNT_64_BIT;

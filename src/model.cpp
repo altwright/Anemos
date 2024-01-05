@@ -66,7 +66,7 @@ ModelInfo loadModelIntoStagingBuffer(const char *glbFilePath, u8 *mappedStagingB
         exit(EXIT_FAILURE);
     }
 
-    u8 *binData = (unsigned char*)data->bin;
+    u8 *binData = (u8*)data->bin;
     u8 *positionsData = binData + positionsAccess->buffer_view->offset + positionsAccess->offset;
     u8 *indicesData = binData + primitive.indices->buffer_view->offset + primitive.indices->offset;
     u8 *texCoordData = binData + texCoordAccess->buffer_view->offset + texCoordAccess->offset;
@@ -79,12 +79,23 @@ ModelInfo loadModelIntoStagingBuffer(const char *glbFilePath, u8 *mappedStagingB
     modelInfo.texCoordCount = texCoordAccess->count;
     modelInfo.texCoordDataSize = modelInfo.texCoordCount * sizeof(vec2);
 
-    memcpy(mappedStagingBuffer, positionsData, modelInfo.verticesDataSize);
-    mappedStagingBuffer += modelInfo.verticesDataSize;
+    if (modelInfo.verticesCount != modelInfo.texCoordCount)
+    {
+        fprintf(stderr, "TexCoord count does not match Vertices Count\n");
+        exit(EXIT_FAILURE);
+    }
+
+    //Interleave vertex attributes
+    for (size_t i = 0; i < modelInfo.verticesCount; i++)
+    {
+        memcpy(mappedStagingBuffer, positionsData + i*sizeof(vec3), sizeof(vec3));
+        mappedStagingBuffer += sizeof(vec3);
+        memcpy(mappedStagingBuffer, texCoordData + i*sizeof(vec2), sizeof(vec2));
+        mappedStagingBuffer += sizeof(vec2);
+    }
+
     memcpy(mappedStagingBuffer, indicesData, modelInfo.indicesDataSize);
     mappedStagingBuffer += modelInfo.indicesDataSize;
-    memcpy(mappedStagingBuffer, texCoordData, modelInfo.texCoordDataSize);
-    mappedStagingBuffer += modelInfo.texCoordDataSize;
 
     if (!primitive.material->has_pbr_metallic_roughness)
     {

@@ -48,11 +48,12 @@ typedef struct {
     VmaAllocation alloc;
     VmaAllocationInfo info;
     VkImageView view;
+    VkSampler sampler;
 } Texture;
 
 typedef struct {
     VkPhysicalDevice handle;
-    VkPhysicalDeviceProperties deviceProperties;
+    VkPhysicalDeviceProperties properties;
     QueueFamilyIndices queueFamilyIndices;
     VkSampleCountFlagBits maxSamplingCount;
 } PhysicalDeviceDetails;
@@ -89,6 +90,7 @@ typedef struct {
     Buffer deviceBuffer;
     Buffer stagingBuffer;
     Buffer uniformBuffer;
+
     Texture deviceTexture;
 } VulkanState;
 

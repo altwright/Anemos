@@ -132,13 +132,13 @@ PipelineDetails createGraphicsPipeline(
     }
 
     VkVertexInputBindingDescription bindingDesc = getVertexBindingDescription();
-    VertexInputAttributes attributes = getVertexInputAttributes();
+    VertexInputAttributeDescriptions attributes = getVertexInputAttributes();
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertexInputInfo.vertexBindingDescriptionCount = 1;
     vertexInputInfo.pVertexBindingDescriptions = &bindingDesc;
     vertexInputInfo.vertexAttributeDescriptionCount = VERTEX_ATTRIBUTE_COUNT;
-    vertexInputInfo.pVertexAttributeDescriptions = attributes.descriptions;
+    vertexInputInfo.pVertexAttributeDescriptions = attributes.descs;
 
     VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo{};
     inputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;

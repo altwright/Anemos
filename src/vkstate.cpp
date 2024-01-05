@@ -55,10 +55,14 @@ VulkanState initVulkanState(Window *window, const UserConfig *config)
         vk.descriptorSetLayout,
         vk.physicalDevice.maxSamplingCount);
 
-    vk.deviceTexture = createDeviceTexture(vk.device, vk.allocator, 8192, 8192, 4);
     vk.deviceBuffer = createDeviceBuffer(vk.allocator, 1 << 26);
     vk.stagingBuffer = createStagingBuffer(vk.allocator, 1 << 26);
     vk.uniformBuffer = createUniformBuffer(vk.allocator, 1 << 26);
+    vk.deviceTexture = createDeviceTexture(
+        vk.device, 
+        vk.allocator, 
+        8192, 8192, 4, 
+        vk.physicalDevice.properties.limits.maxSamplerAnisotropy);
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
         vk.frameSyncers[i] = createFrameSynchroniser(vk.device);
@@ -81,6 +85,8 @@ void destroyVulkanState(VulkanState *vk)
     vmaDestroyBuffer(vk->allocator, vk->uniformBuffer.handle, vk->uniformBuffer.alloc);
     vmaDestroyBuffer(vk->allocator, vk->stagingBuffer.handle, vk->stagingBuffer.alloc);
     vmaDestroyBuffer(vk->allocator, vk->deviceBuffer.handle, vk->deviceBuffer.alloc);
+
+    vkDestroySampler(vk->device, vk->deviceTexture.sampler, NULL);
     vkDestroyImageView(vk->device, vk->deviceTexture.view, NULL);
     vmaDestroyImage(vk->allocator, vk->deviceTexture.handle, vk->deviceTexture.alloc);
 

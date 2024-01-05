@@ -7,9 +7,8 @@ VmaAllocator createAllocator(VkDevice device, VkInstance instance, VkPhysicalDev
 Texture createDeviceTexture(
     VkDevice device, 
     VmaAllocator allocator, 
-    size_t texWidth, 
-    size_t texHeight, 
-    size_t texChannel);
+    size_t texWidth, size_t texHeight, size_t texChannel,
+    float maxAnisotropy);
 Buffer createDeviceBuffer(
     VmaAllocator allocator,
     VkDeviceSize bufferSize);

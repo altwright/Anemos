@@ -39,18 +39,33 @@ int main(int, char**)
     {
         VkDescriptorBufferInfo uniformBufferInfo = {};
         uniformBufferInfo.buffer = vk.uniformBuffer.handle;
-        uniformBufferInfo.offset = i*vk.physicalDevice.deviceProperties.limits.minUniformBufferOffsetAlignment;
+        uniformBufferInfo.offset = i*vk.physicalDevice.properties.limits.minUniformBufferOffsetAlignment;
         uniformBufferInfo.range = sizeof(mat4);
 
-        VkWriteDescriptorSet descriptorWrite = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-        descriptorWrite.dstSet = descriptorSets.handles[i];
-        descriptorWrite.dstBinding = 0;
-        descriptorWrite.dstArrayElement = 0;
-        descriptorWrite.descriptorCount = 1;
-        descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        descriptorWrite.pBufferInfo = &uniformBufferInfo;
+        VkDescriptorImageInfo textureInfo = {};
+        textureInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        textureInfo.imageView = vk.deviceTexture.view;
+        textureInfo.sampler = vk.deviceTexture.sampler;
 
-        vkUpdateDescriptorSets(vk.device, 1, &descriptorWrite, 0, NULL);
+        VkWriteDescriptorSet ubDescriptorWrite = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+        ubDescriptorWrite.dstSet = descriptorSets.handles[i];
+        ubDescriptorWrite.dstBinding = 0;
+        ubDescriptorWrite.dstArrayElement = 0;
+        ubDescriptorWrite.descriptorCount = 1;
+        ubDescriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        ubDescriptorWrite.pBufferInfo = &uniformBufferInfo;
+
+        VkWriteDescriptorSet texDescriptorWrite = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+        texDescriptorWrite.dstSet = descriptorSets.handles[i];
+        texDescriptorWrite.dstBinding = 1;
+        texDescriptorWrite.dstArrayElement = 0;
+        texDescriptorWrite.descriptorCount = 1;
+        texDescriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        texDescriptorWrite.pImageInfo = &textureInfo;
+
+        VkWriteDescriptorSet descriptorWrites[2] = {ubDescriptorWrite, texDescriptorWrite};
+
+        vkUpdateDescriptorSets(vk.device, 2, descriptorWrites, 0, NULL);
     }
 
     VkCommandBuffer graphicsCmdBuffers[MAX_FRAMES_IN_FLIGHT] = {};
@@ -59,12 +74,11 @@ int main(int, char**)
         graphicsCmdBuffers[i] = createPrimaryCommandBuffer(vk.device, vk.graphicsCmdPools[i]);
     }
 
-    u8 *mappedBuffer = (u8*)vk.stagingBuffer.info.pMappedData;
-    ModelInfo modelInfo = loadModelIntoStagingBuffer("./models/dead_cube.glb", mappedBuffer);
+    ModelInfo modelInfo = loadModelIntoStagingBuffer("./models/dead_cube.glb", (u8*)vk.stagingBuffer.info.pMappedData);
     size_t modelDataSize = 
         modelInfo.verticesDataSize + 
-        modelInfo.indicesDataSize + 
-        modelInfo.texCoordDataSize;
+        modelInfo.texCoordDataSize +
+        modelInfo.indicesDataSize;
 
     copyToDeviceBuffer(
         modelDataSize,
@@ -134,7 +148,7 @@ int main(int, char**)
         glm_mat4_mul_sse2(projection.matrix, view.matrix, pushConstant.viewProjection);
         updateUniformBuffer(
             &vk.uniformBuffer, 
-            currentFrame*vk.physicalDevice.deviceProperties.limits.minUniformBufferOffsetAlignment, 
+            currentFrame*vk.physicalDevice.properties.limits.minUniformBufferOffsetAlignment, 
             &modelInfo);
 
         recordModelDrawCommand(
@@ -147,7 +161,7 @@ int main(int, char**)
             descriptorSets.handles[currentFrame],
             vk.deviceBuffer.handle,
             0, modelInfo.verticesCount,
-            modelInfo.verticesDataSize, modelInfo.indicesCount);
+            modelInfo.verticesDataSize + modelInfo.texCoordDataSize, modelInfo.indicesCount);
 
         submitDrawCommand(
             vk.graphicsQueue,
