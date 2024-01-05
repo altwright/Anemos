@@ -168,7 +168,7 @@ VkCommandBuffer beginSingleTimeCommandBuffer(VkDevice device, VkCommandPool cmdP
     return cmdBuffer;
 }
 
-void submitCommandBuffer(
+void submitSingleTimeCommandBuffer(
     VkDevice device, 
     VkCommandPool cmdPool, 
     VkCommandBuffer cmdBuffer, 

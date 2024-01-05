@@ -4,6 +4,12 @@
 #include "vkstate.h"
 
 VmaAllocator createAllocator(VkDevice device, VkInstance instance, VkPhysicalDevice physicalDevice);
+Texture createDeviceTexture(
+    VkDevice device, 
+    VmaAllocator allocator, 
+    size_t texWidth, 
+    size_t texHeight, 
+    size_t texChannel);
 Buffer createDeviceBuffer(
     VmaAllocator allocator,
     VkDeviceSize bufferSize);
@@ -20,5 +26,14 @@ void copyToDeviceBuffer(
     VkBuffer dstBuffer,
     size_t dstOffset,
     VkDevice device,
+    VkCommandPool transferCmdPool,
+    VkQueue transferQueue);
+void copyToDeviceTexture(
+    VkDevice device,
+    VkImage deviceTexture,
+    VkBuffer stagingBuffer,
+    VkDeviceSize stagingBufferOffset,
+    u32 textureWidth,
+    u32 textureHeight,
     VkCommandPool transferCmdPool,
     VkQueue transferQueue);

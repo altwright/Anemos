@@ -34,28 +34,6 @@ int main(int, char**)
 
     VulkanState vk = initVulkanState(&window, &userConfig);
 
-    VkCommandBuffer graphicsCmdBuffers[MAX_FRAMES_IN_FLIGHT] = {};
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-    {
-        graphicsCmdBuffers[i] = createPrimaryCommandBuffer(vk.device, vk.graphicsCmdPools[i]);
-    }
-
-    u8 *mappedBuffer = (u8*)vk.stagingBuffer.info.pMappedData;
-    ModelInfo modelInfo = loadModelIntoStagingBuffer("./models/dead_cube.glb", mappedBuffer);
-    size_t modelDataSize = 
-        modelInfo.verticesDataSize + 
-        modelInfo.indicesDataSize + 
-        modelInfo.texCoordDataSize + 
-        modelInfo.texWidth * modelInfo.texHeight * modelInfo.texChannels;
-
-    copyToDeviceBuffer(
-        modelDataSize,
-        vk.stagingBuffer.handle, 0, 
-        vk.deviceBuffer.handle, 0, 
-        vk.device, 
-        vk.transferCommandPool, 
-        vk.transferQueue);
-
     DescriptorSets descriptorSets = allocateDescriptorSets(vk.device, vk.descriptorSetLayout, vk.descriptorPool);
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
@@ -74,6 +52,37 @@ int main(int, char**)
 
         vkUpdateDescriptorSets(vk.device, 1, &descriptorWrite, 0, NULL);
     }
+
+    VkCommandBuffer graphicsCmdBuffers[MAX_FRAMES_IN_FLIGHT] = {};
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    {
+        graphicsCmdBuffers[i] = createPrimaryCommandBuffer(vk.device, vk.graphicsCmdPools[i]);
+    }
+
+    u8 *mappedBuffer = (u8*)vk.stagingBuffer.info.pMappedData;
+    ModelInfo modelInfo = loadModelIntoStagingBuffer("./models/dead_cube.glb", mappedBuffer);
+    size_t modelDataSize = 
+        modelInfo.verticesDataSize + 
+        modelInfo.indicesDataSize + 
+        modelInfo.texCoordDataSize;
+
+    copyToDeviceBuffer(
+        modelDataSize,
+        vk.stagingBuffer.handle, 0, 
+        vk.deviceBuffer.handle, 0, 
+        vk.device, 
+        vk.transferCommandPool, 
+        vk.transferQueue);
+
+    copyToDeviceTexture(
+        vk.device,
+        vk.deviceTexture.handle,
+        vk.stagingBuffer.handle,
+        modelDataSize,
+        modelInfo.texWidth, modelInfo.texHeight,
+        vk.graphicsCmdPools[0],
+        vk.graphicsQueue
+    );
 
     CameraControls cam = cam_createControls();
     cam_setInputHandler(&cam, &window.inputHandler);
