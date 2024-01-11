@@ -56,8 +56,7 @@ int main(int, char**)
     copyToDeviceTexture(
         vk.device,
         deviceTexture.handle,
-        vk.stagingBuffer.handle,
-        modelDataSize,
+        vk.stagingBuffer.handle, modelDataSize,
         modelInfo.texWidth, modelInfo.texHeight,
         *vk.graphicsCmdPools,
         vk.graphicsQueue);

@@ -14,7 +14,6 @@ typedef struct ModelInfo{
 
     int texWidth;
     int texHeight;
-    int texChannels;
 
     mat4 worldMatrix;
 } ModelInfo;

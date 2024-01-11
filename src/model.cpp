@@ -94,7 +94,7 @@ ModelInfo loadModelIntoStagingBuffer(const char *glbFilePath, u8 *mappedStagingB
         memcpy(mappedStagingBuffer, texCoordData + i, sizeof(vec2));
         mappedStagingBuffer += sizeof(vec2);
 
-        printf("{%f, %f}\n", texCoordData[i][0], texCoordData[i][1]);
+        //printf("{%f, %f}\n", texCoordData[i][0], texCoordData[i][1]);
     }
 
     memcpy(mappedStagingBuffer, indicesData, modelInfo.indicesDataSize);
@@ -120,7 +120,7 @@ ModelInfo loadModelIntoStagingBuffer(const char *glbFilePath, u8 *mappedStagingB
         image->buffer_view->size, 
         &modelInfo.texWidth, 
         &modelInfo.texHeight, 
-        &modelInfo.texChannels, 
+        NULL,
         STBI_rgb_alpha);
 
     if (!texData)
@@ -129,7 +129,7 @@ ModelInfo loadModelIntoStagingBuffer(const char *glbFilePath, u8 *mappedStagingB
         exit(EXIT_FAILURE);
     }
 
-    memcpy(mappedStagingBuffer, texData, modelInfo.texWidth * modelInfo.texHeight * modelInfo.texChannels);
+    memcpy(mappedStagingBuffer, texData, modelInfo.texWidth * modelInfo.texHeight * STBI_rgb_alpha);
 
     stbi_image_free(texData);
     cgltf_free(data);
