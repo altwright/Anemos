@@ -67,9 +67,9 @@ ModelInfo loadModelIntoStagingBuffer(const char *glbFilePath, u8 *mappedStagingB
     }
 
     u8 *binData = (u8*)data->bin;
-    u8 *positionsData = binData + positionsAccess->buffer_view->offset + positionsAccess->offset;
-    u8 *texCoordData = binData + texCoordAccess->buffer_view->offset + texCoordAccess->offset;
-    u8 *indicesData = binData + primitive.indices->buffer_view->offset + primitive.indices->offset;
+    vec3 *positionsData = (vec3*)(binData + positionsAccess->buffer_view->offset + positionsAccess->offset);
+    vec2 *texCoordData = (vec2*)(binData + texCoordAccess->buffer_view->offset + texCoordAccess->offset);
+    u16 *indicesData = (u16*)(binData + primitive.indices->buffer_view->offset + primitive.indices->offset);
 
     ModelInfo modelInfo = {.worldMatrix = GLM_MAT4_IDENTITY_INIT};
     modelInfo.verticesCount = positionsAccess->count;
@@ -85,78 +85,20 @@ ModelInfo loadModelIntoStagingBuffer(const char *glbFilePath, u8 *mappedStagingB
         exit(EXIT_FAILURE);
     }
 
-    /*vec2 texCoords[24] = {
-        {0.625000, 0.500000}, 
-        {0.625000, 0.500000}, 
-        {0.625000, 0.500000}, 
-        {0.375000, 0.500000}, 
-        {0.375000, 0.500000}, 
-        {0.375000, 0.500000}, 
-        {0.625000, 0.250000}, 
-        {0.625000, 0.250000}, 
-        {0.625000, 0.250000}, 
-        {0.375000, 0.250000}, 
-        {0.375000, 0.250000}, 
-        {0.375000, 0.250000}, 
-        {0.625000, 0.750000}, 
-        {0.625000, 0.750000}, 
-        {0.875000, 0.500000}, 
-        {0.375000, 0.750000}, 
-        {0.125000, 0.500000}, 
-        {0.375000, 0.750000}, 
-        {0.625000, 1.000000}, 
-        {0.625000, 0.000000}, 
-        {0.875000, 0.250000}, 
-        {0.375000, 1.000000}, 
-        {0.125000, 0.250000}, 
-        {0.375000, 0.000000}
-    };
-    */
-
-    vec2 texCoords[24] = {
-        {0.625000, 0.500000}, 
-        {0.625000, 0.500000}, 
-        {0.625000, 0.500000}, 
-        {0.375000, 0.500000}, 
-        {0.375000, 0.500000}, 
-        {0.375000, 0.500000}, 
-        {0.625000, 0.250000}, 
-        {0.625000, 0.250000}, 
-        {0.625000, 0.250000}, 
-        {0.375000, 0.250000}, 
-        {0.375000, 0.250000}, 
-        {0.375000, 0.250000}, 
-        {0.625000, 0.500000}, 
-        {0.625000, 0.500000}, 
-        {0.625000, 0.500000}, 
-        {0.375000, 0.500000}, 
-        {0.375000, 0.500000}, 
-        {0.375000, 0.500000}, 
-        {0.625000, 0.250000}, 
-        {0.625000, 0.250000}, 
-        {0.625000, 0.250000}, 
-        {0.375000, 0.250000}, 
-        {0.375000, 0.250000}, 
-        {0.375000, 0.250000}
-    };
-    
     //Interleave vertex attributes
     for (size_t i = 0; i < modelInfo.verticesCount; i++)
     {
-        memcpy(mappedStagingBuffer, positionsData + i*sizeof(vec3), sizeof(vec3));
+        memcpy(mappedStagingBuffer, positionsData + i, sizeof(vec3));
         mappedStagingBuffer += sizeof(vec3);
-        //memcpy(mappedStagingBuffer, texCoordData + i*sizeof(vec2), sizeof(vec2));
-        memcpy(mappedStagingBuffer, texCoords + i, sizeof(vec2));
+
+        memcpy(mappedStagingBuffer, texCoordData + i, sizeof(vec2));
         mappedStagingBuffer += sizeof(vec2);
 
-        float *position = (float*)&positionsData[i*sizeof(vec3)];
-        float *texCoord = (float*)&texCoordData[i*sizeof(vec2)];
-        printf("{%f, %f, %f}, {%f, %f}\n", position[0], position[1], position[2], texCoord[0], texCoord[1]);
+        printf("{%f, %f}\n", texCoordData[i][0], texCoordData[i][1]);
     }
 
     memcpy(mappedStagingBuffer, indicesData, modelInfo.indicesDataSize);
     mappedStagingBuffer += modelInfo.indicesDataSize;
-
 /*
     printf("\n");
     u16 *indicies = (u16*)indicesData;
@@ -183,7 +125,7 @@ ModelInfo loadModelIntoStagingBuffer(const char *glbFilePath, u8 *mappedStagingB
 
     if (!texData)
     {
-        fprintf(stderr, "Invalid texture image\n");
+        fprintf(stderr, "Invalid texture image: %s\n", glbFilePath);
         exit(EXIT_FAILURE);
     }
 

@@ -59,7 +59,7 @@ int main(int, char**)
         vk.stagingBuffer.handle,
         modelDataSize,
         modelInfo.texWidth, modelInfo.texHeight,
-        vk.graphicsCmdPools[0],
+        *vk.graphicsCmdPools,
         vk.graphicsQueue);
 
     DescriptorSets descriptorSets = allocateDescriptorSets(vk.device, vk.descriptorSetLayout, vk.descriptorPool);
