@@ -1,21 +1,27 @@
 #pragma once
 #include "int.h"
 #include "vertex.h"
+#include "cgltf.h"
+#include "vkmemory.h"
 
-typedef struct ModelInfo{
-    size_t verticesCount;
-    size_t verticesDataSize;
+typedef struct{
+    size_t elementCount;
+    size_t dataSize;
+} ModelAttributeInfo;
 
-    size_t indicesCount;
-    size_t indicesDataSize;
+typedef struct{
+    u32 width;
+    u32 height;
+    u32 channels;
+} TextureInfo;
 
-    size_t texCoordCount;
-    size_t texCoordDataSize;
-
-    int texWidth;
-    int texHeight;
-
+typedef struct{
     mat4 worldMatrix;
+    DeviceImage tex;
 } ModelInfo;
 
-ModelInfo loadModelIntoStagingBuffer(const char *glbFilePath, u8 *mappedStagingBuffer);
+cgltf_data* loadglTFData(const char *glbFilepath);
+//ModelInfo stageModelData(const char *glbFilePath, u8 *mappedStagingBuffer);
+ModelAttributeInfo stageModelVertexAttributes(cgltf_data *modelData, u8* stagingBuffer);
+ModelAttributeInfo stageModelIndices(cgltf_data* modelData, u8* stagingBuffer);
+TextureInfo stageModelTexture(cgltf_data *modelData, u8* stagingBuffer);

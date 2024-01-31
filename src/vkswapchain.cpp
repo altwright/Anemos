@@ -180,8 +180,8 @@ void recreateSwapchain(
     VkRenderPass renderPass,
     VkSampleCountFlagBits samplingCount,
     SwapchainDetails *swapchain,
-    Image *depthImage,
-    Image *samplingImage,
+    DeviceImage *depthImage,
+    DeviceImage *samplingImage,
     Framebuffers *framebuffers)
 {
     int width = 0, height = 0;

@@ -5,6 +5,7 @@
 #include "vkstate.h"
 #include "int.h"
 #include "vkshader.h"
+#include "scene.h"
 
 VkCommandPool createCommandPool(VkDevice device, uint32_t queueIndex, VkCommandPoolCreateFlags createFlags){
     VkCommandPoolCreateInfo poolInfo{};
@@ -21,7 +22,7 @@ VkCommandPool createCommandPool(VkDevice device, uint32_t queueIndex, VkCommandP
     return pool;
 }
 
-void recordModelDrawCommand(
+/*void recordModelDrawCommand(
     VkCommandBuffer commandBuffer, 
     VkRenderPass renderPass, 
     VkFramebuffer framebuffer, 
@@ -99,6 +100,90 @@ void recordModelDrawCommand(
     if (vkEndCommandBuffer(commandBuffer)){
         fprintf(stderr, "Failed to end recording of Command Buffer\n");
         exit(EXIT_FAILURE);
+    }
+}*/
+
+void recordModelDrawCommand(
+    VkCommandBuffer cmdBuffer, 
+    VkRenderPass renderPass, 
+    VkFramebuffer framebuffer, 
+    PipelineDetails graphicsPipeline,
+    VkExtent2D renderArea,
+    PushConstant pushConstant,
+    VkDescriptorSet descriptorSet,
+    VkBuffer deviceBuffer,
+    size_t vertexBufferOffset,
+    size_t indexBufferOffset,
+    size_t drawCmdsOffset,
+    size_t drawCmdsCount)
+{
+
+    VkCommandBufferBeginInfo beginInfo = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+    
+    if (vkBeginCommandBuffer(cmdBuffer, &beginInfo)){//Implicit reset of buffer
+        fprintf(stderr, "Failed to begin recording Command Buffer\n");
+        abort();
+    }
+
+    VkRenderPassBeginInfo renderPassBeginInfo = {};
+    renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassBeginInfo.renderPass = renderPass;
+    renderPassBeginInfo.framebuffer = framebuffer;
+    renderPassBeginInfo.renderArea.offset = {0, 0};
+    //The render area defines where shader loads and stores will take place. 
+    //The pixels outside this region will have undefined values. It should 
+    //match the size of the attachments for best performance.
+    renderPassBeginInfo.renderArea.extent = renderArea;
+    //Note that the order of clearValues should be identical to the order of your attachments.
+    VkClearValue clearValues[2] = {};
+    clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+    clearValues[1].depthStencil = {1.0f, 0};
+    renderPassBeginInfo.clearValueCount = NUM_ELEMENTS(clearValues);
+    renderPassBeginInfo.pClearValues = clearValues;
+
+    vkCmdBeginRenderPass(cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+    vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.handle);
+
+    vkCmdPushConstants(cmdBuffer, graphicsPipeline.layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstant), &pushConstant);
+
+    vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &deviceBuffer, &vertexBufferOffset);
+
+    vkCmdBindIndexBuffer(cmdBuffer, deviceBuffer, indexBufferOffset, VK_INDEX_TYPE_UINT16);
+
+    VkViewport viewport{};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = renderArea.width;
+    viewport.height = renderArea.height;
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+    vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
+
+    VkRect2D scissor{};
+    scissor.offset = {0, 0};
+    scissor.extent = renderArea;
+    vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
+    
+    vkCmdBindDescriptorSets(
+        cmdBuffer, 
+        VK_PIPELINE_BIND_POINT_GRAPHICS, 
+        graphicsPipeline.layout, 
+        0, 1, &descriptorSet, 
+        0, NULL
+    );
+    
+    vkCmdDrawIndexedIndirect(
+        cmdBuffer, 
+        deviceBuffer, 
+        drawCmdsOffset, drawCmdsCount, sizeof(VkDrawIndexedIndirectCommand));
+
+    vkCmdEndRenderPass(cmdBuffer);
+
+    if (vkEndCommandBuffer(cmdBuffer))
+    {
+        fprintf(stderr, "Failed to end recording of Command Buffer\n");
+        abort();
     }
 }
 

@@ -18,4 +18,5 @@ target_sources(anemos PRIVATE
     vkshader.cpp
     input.cpp
     controls.cpp
+    scene.cpp
 )

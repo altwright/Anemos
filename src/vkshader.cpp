@@ -17,13 +17,13 @@ VkDescriptorSetLayout createDescriptorSetLayout(VkDevice device)
     VkDescriptorSetLayoutBinding samplerBinding = {};
     samplerBinding.binding = 1;
     samplerBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    samplerBinding.descriptorCount = 1;
+    samplerBinding.descriptorCount = 2;
     samplerBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-    VkDescriptorSetLayoutBinding bindings[2] = {ubBinding, samplerBinding};
+    VkDescriptorSetLayoutBinding bindings[] = {ubBinding, samplerBinding};
 
     VkDescriptorSetLayoutCreateInfo layoutInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
-    layoutInfo.bindingCount = 2;
+    layoutInfo.bindingCount = NUM_ELEMENTS(bindings);
     layoutInfo.pBindings = bindings;
 
     VkDescriptorSetLayout layout = {};
@@ -43,13 +43,13 @@ VkDescriptorPool createDescriptorPool(VkDevice device)
 
     VkDescriptorPoolSize samplerPoolSize = {};
     samplerPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    samplerPoolSize.descriptorCount = MAX_FRAMES_IN_FLIGHT;
+    samplerPoolSize.descriptorCount = 2 * MAX_FRAMES_IN_FLIGHT;
 
-    VkDescriptorPoolSize poolSizes[2] = {ubPoolSize, samplerPoolSize};
+    VkDescriptorPoolSize poolSizes[] = {ubPoolSize, samplerPoolSize};
 
     VkDescriptorPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    poolInfo.poolSizeCount = 2;
+    poolInfo.poolSizeCount = NUM_ELEMENTS(poolSizes);
     poolInfo.pPoolSizes = poolSizes;
     poolInfo.maxSets = MAX_FRAMES_IN_FLIGHT;
 
@@ -81,39 +81,10 @@ DescriptorSets allocateDescriptorSets(VkDevice device, VkDescriptorSetLayout lay
     return sets;
 }
 
-void updateUniformBuffer(Buffer *uniformBuffer, VkDeviceSize offset, ModelInfo *model)
+void updateUniformBuffer(Buffer *uniformBuffer, VkDeviceSize offset, ModelInfo *modelInfo)
 {
-    unsigned char *mappedBuffer = (unsigned char*)uniformBuffer->info.pMappedData + offset;
-    memcpy(mappedBuffer, model->worldMatrix, sizeof(mat4));
-}
-
-void updateUniformBuffer(void *mappedUniformBuffer, VkExtent2D swapchainExtent)
-{
-    static const s64 startTimeNs = SEC_TO_NS(START_TIME.tv_sec) + START_TIME.tv_nsec;
-
-    timespec currentTime = {};
-    if (clock_gettime(TIMING_CLOCK, &currentTime)){
-        perror("Failed to get Current Time\n");
-        exit(EXIT_FAILURE);
-    }
-
-    s64 currentTimeNs = SEC_TO_NS(currentTime.tv_sec) + currentTime.tv_nsec;
-    s64 timeDiffNs = currentTimeNs - startTimeNs;
-    float rotationRadians = (glm_rad(90.0f) * timeDiffNs)/SEC_TO_NS(1);
-
-    UniformBufferData ubo = {};
-    glm_mat4_identity(ubo.model);
-    vec3 rotationAxis = {0.0f, 0.0f, 1.0f};
-    glm_rotate(ubo.model, rotationRadians, rotationAxis);
-    vec3 eye = {2.0f, 2.0f, 2.0f};
-    vec3 centre = {0.0f, 0.0f, 0.0f};
-    vec3 up = {0.0f, 0.0f, 1.0f};
-    glm_lookat(eye, centre, up, ubo.view);
-    glm_perspective(glm_rad(45.0f), swapchainExtent.width / (float)swapchainExtent.height, 0.1f, 10.0f, ubo.projection);
-    ubo.projection[1][1] *= -1;//Originally designed for OpenGL, so must be inverted
-
-    memcpy(mappedUniformBuffer, &ubo, sizeof(UniformBufferData));
-    //Push Constants are a more efficient way of transferring small data to the shaders
+    u8 *mappedBuffer = (u8*)uniformBuffer->info.pMappedData + offset;
+    memcpy(mappedBuffer, modelInfo->worldMatrix, sizeof(mat4));
 }
 
 VkShaderModule createShaderModule(VkDevice device, uint32_t *code, size_t numBytes)

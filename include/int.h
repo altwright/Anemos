@@ -1,7 +1,7 @@
 #pragma once
 #include <stdint.h>
 
-#define NUM_ELEMENTS(arr)  (sizeof((arr)) / sizeof((arr)[0])
+#define NUM_ELEMENTS(arr)  (sizeof(arr) / sizeof(*arr))
 
 typedef uint8_t u8;
 typedef uint16_t u16;

@@ -11,6 +11,7 @@
 #include "vkshader.h"
 #include "input.h"
 #include "controls.h"
+#include "scene.h"
 
 int main(int, char**)
 {
@@ -34,30 +35,13 @@ int main(int, char**)
 
     VulkanState vk = initVulkanState(&window, &userConfig);
 
-    ModelInfo modelInfo = loadModelIntoStagingBuffer("./models/pompeii.glb", (u8*)vk.stagingBuffer.info.pMappedData);
-    size_t modelDataSize = 
-        modelInfo.verticesDataSize + 
-        modelInfo.texCoordDataSize +
-        modelInfo.indicesDataSize;
-
-    copyToDeviceBuffer(
-        modelDataSize,
-        vk.stagingBuffer.handle, 0, 
-        vk.deviceBuffer.handle, 0, 
-        vk.device, 
-        vk.transferCommandPool, 
-        vk.transferQueue);
-
-    Texture deviceTexture = createDeviceTexture(
-        vk.device, 
-        vk.allocator, 
-        modelInfo.texWidth, modelInfo.texHeight);
-
-    copyToDeviceTexture(
+    SceneInfo sceneInfo = loadSceneToDevice(
+        "./models/surface.glb",
+        "./models/pompeii.glb",
+        vk.stagingBuffer,
+        vk.deviceBuffer,
         vk.device,
-        deviceTexture.handle,
-        vk.stagingBuffer.handle, modelDataSize,
-        modelInfo.texWidth, modelInfo.texHeight,
+        vk.allocator,
         *vk.graphicsCmdPools,
         vk.graphicsQueue);
 
@@ -69,30 +53,34 @@ int main(int, char**)
         uniformBufferInfo.offset = i*vk.physicalDevice.properties.limits.minUniformBufferOffsetAlignment;
         uniformBufferInfo.range = sizeof(mat4);
 
-        VkDescriptorImageInfo textureInfo = {};
-        textureInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        textureInfo.imageView = deviceTexture.view;
-        textureInfo.sampler = vk.sampler;
-
         VkWriteDescriptorSet ubDescriptorWrite = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         ubDescriptorWrite.dstSet = descriptorSets.handles[i];
         ubDescriptorWrite.dstBinding = 0;
+        ubDescriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         ubDescriptorWrite.dstArrayElement = 0;
         ubDescriptorWrite.descriptorCount = 1;
-        ubDescriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         ubDescriptorWrite.pBufferInfo = &uniformBufferInfo;
 
+        VkDescriptorImageInfo surfaceTexDesc = {};
+        surfaceTexDesc.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        surfaceTexDesc.imageView = sceneInfo.surfaceModelInfo.tex.view;
+        surfaceTexDesc.sampler = vk.sampler;
+
+        VkDescriptorImageInfo characterTexDesc = surfaceTexDesc;
+        characterTexDesc.imageView = sceneInfo.characterModelInfo.tex.view;
+
+        VkDescriptorImageInfo texDescriptors[] = {surfaceTexDesc, characterTexDesc};
         VkWriteDescriptorSet texDescriptorWrite = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         texDescriptorWrite.dstSet = descriptorSets.handles[i];
         texDescriptorWrite.dstBinding = 1;
-        texDescriptorWrite.dstArrayElement = 0;
-        texDescriptorWrite.descriptorCount = 1;
         texDescriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        texDescriptorWrite.pImageInfo = &textureInfo;
+        texDescriptorWrite.dstArrayElement = 0;
+        texDescriptorWrite.descriptorCount = NUM_ELEMENTS(texDescriptors);
+        texDescriptorWrite.pImageInfo = texDescriptors;
 
-        VkWriteDescriptorSet descriptorWrites[2] = {ubDescriptorWrite, texDescriptorWrite};
+        VkWriteDescriptorSet descriptorWrites[] = {ubDescriptorWrite, texDescriptorWrite};
 
-        vkUpdateDescriptorSets(vk.device, 2, descriptorWrites, 0, NULL);
+        vkUpdateDescriptorSets(vk.device, NUM_ELEMENTS(descriptorWrites), descriptorWrites, 0, NULL);
     }
 
     VkCommandBuffer graphicsCmdBuffers[MAX_FRAMES_IN_FLIGHT] = {};
@@ -149,10 +137,16 @@ int main(int, char**)
 
         Matrix4 view = cam_genViewMatrix(&cam);
         glm_mat4_mul_sse2(projection.matrix, view.matrix, pushConstant.viewProjection);
+
         updateUniformBuffer(
             &vk.uniformBuffer, 
             currentFrame*vk.physicalDevice.properties.limits.minUniformBufferOffsetAlignment, 
-            &modelInfo);
+            &sceneInfo.surfaceModelInfo);
+
+        updateUniformBuffer(
+            &vk.uniformBuffer, 
+            currentFrame*vk.physicalDevice.properties.limits.minUniformBufferOffsetAlignment + sizeof(mat4), 
+            &sceneInfo.characterModelInfo);
 
         recordModelDrawCommand(
             graphicsCmdBuffers[currentFrame],
@@ -163,8 +157,9 @@ int main(int, char**)
             pushConstant,
             descriptorSets.handles[currentFrame],
             vk.deviceBuffer.handle,
-            0, modelInfo.verticesCount,
-            modelInfo.verticesDataSize + modelInfo.texCoordDataSize, modelInfo.indicesCount);
+            sceneInfo.vtxBufOffset,
+            sceneInfo.idxBufOffset,
+            sceneInfo.drawCmdsOffset, sceneInfo.drawCmdsCount);
 
         submitDrawCommand(
             vk.graphicsQueue,
@@ -212,8 +207,10 @@ int main(int, char**)
 
     vkDeviceWaitIdle(vk.device);
 
-    vkDestroyImageView(vk.device, deviceTexture.view, NULL);
-    vmaDestroyImage(vk.allocator, deviceTexture.handle, deviceTexture.alloc);
+    vkDestroyImageView(vk.device, sceneInfo.surfaceModelInfo.tex.view, NULL);
+    vmaDestroyImage(vk.allocator, sceneInfo.surfaceModelInfo.tex.handle, sceneInfo.surfaceModelInfo.tex.alloc);
+    vkDestroyImageView(vk.device, sceneInfo.characterModelInfo.tex.view, NULL);
+    vmaDestroyImage(vk.allocator, sceneInfo.characterModelInfo.tex.handle, sceneInfo.characterModelInfo.tex.alloc);
 
     destroyWindow(&window);
     destroyVulkanState(&vk);

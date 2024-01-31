@@ -169,9 +169,9 @@ PipelineDetails createGraphicsPipeline(
 
     VkPipelineMultisampleStateCreateInfo multisamplingInfo{};
     multisamplingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisamplingInfo.sampleShadingEnable = VK_FALSE;
     multisamplingInfo.rasterizationSamples = samplingCount;
-    multisamplingInfo.minSampleShading = 1.0f; // Optional
+    multisamplingInfo.sampleShadingEnable = VK_TRUE;
+    multisamplingInfo.minSampleShading = 0.3f;//From Vulkan Tutorial
     multisamplingInfo.pSampleMask = nullptr; // Optional
     multisamplingInfo.alphaToCoverageEnable = VK_FALSE; // Optional
     multisamplingInfo.alphaToOneEnable = VK_FALSE; // Optional
@@ -229,12 +229,11 @@ PipelineDetails createGraphicsPipeline(
     fragShaderStageInfo.module = fragShaderModule;
     fragShaderStageInfo.pName = "main";
 
-    u32 shaderStagesCount = 2;
-    VkPipelineShaderStageCreateInfo shaderStages[shaderStagesCount] = {vertShaderStageInfo, fragShaderStageInfo};
+    VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
 
     VkGraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipelineInfo.stageCount = shaderStagesCount;
+    pipelineInfo.stageCount = NUM_ELEMENTS(shaderStages);
     pipelineInfo.pStages = shaderStages;
     pipelineInfo.pVertexInputState = &vertexInputInfo;
     pipelineInfo.pInputAssemblyState = &inputAssemblyInfo;

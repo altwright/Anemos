@@ -4,6 +4,7 @@
 #include "int.h"
 #include "window.h"
 #include "config.h"
+#include "vkmemory.h"
 
 typedef struct {
     u32 queueFamilyCount;
@@ -38,32 +39,11 @@ typedef struct {
 } FrameSynchroniser;
 
 typedef struct {
-    VkBuffer handle;
-    VmaAllocation alloc;
-    VmaAllocationInfo info;
-} Buffer;
-
-typedef struct {
-    VkImage handle;
-    VmaAllocation alloc;
-    VmaAllocationInfo info;
-    VkImageView view;
-} Texture;
-
-typedef struct {
     VkPhysicalDevice handle;
     VkPhysicalDeviceProperties properties;
     QueueFamilyIndices queueFamilyIndices;
     VkSampleCountFlagBits maxSamplingCount;
 } PhysicalDeviceDetails;
-
-typedef struct {
-    VkImage handle;
-    VmaAllocation alloc;
-    VkImageView view;
-    VkExtent2D extent;
-    VkFormat format;
-} Image;
 
 typedef struct {
     VkInstance instance;
@@ -75,8 +55,8 @@ typedef struct {
     VkQueue presentQueue;
     VkQueue transferQueue;
     SwapchainDetails swapchain;
-    Image depthImage;
-    Image samplingImage;
+    DeviceImage depthImage;
+    DeviceImage samplingImage;
     VkRenderPass renderPass;
     Framebuffers framebuffers;
     VkDescriptorSetLayout descriptorSetLayout;

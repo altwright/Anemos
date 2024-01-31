@@ -288,21 +288,32 @@ VkDevice createLogicalDevice(const PhysicalDeviceDetails *physicalDevice)
 
     VkPhysicalDeviceFeatures deviceFeatures = {};
     deviceFeatures.samplerAnisotropy = VK_TRUE;
+    deviceFeatures.sampleRateShading = VK_TRUE;
+    deviceFeatures.multiDrawIndirect = VK_TRUE;
+    deviceFeatures.drawIndirectFirstInstance = VK_TRUE;
 
-    VkDeviceCreateInfo createInfo = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};
-    createInfo.queueCreateInfoCount = queueCreateInfoCount;
-    createInfo.pQueueCreateInfos = queueCreateInfos;
-    createInfo.enabledExtensionCount = DEVICE_EXTENSIONS_COUNT;
-    createInfo.ppEnabledExtensionNames = DEVICE_EXTENSIONS;
-    createInfo.pEnabledFeatures = &deviceFeatures;
+    VkDeviceCreateInfo deviceInfo = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};
+    deviceInfo.queueCreateInfoCount = queueCreateInfoCount;
+    deviceInfo.pQueueCreateInfos = queueCreateInfos;
+    deviceInfo.enabledExtensionCount = DEVICE_EXTENSIONS_COUNT;
+    deviceInfo.ppEnabledExtensionNames = DEVICE_EXTENSIONS;
+    deviceInfo.pEnabledFeatures = &deviceFeatures;
 
-    VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures separateDepthStencilFeature = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SEPARATE_DEPTH_STENCIL_LAYOUTS_FEATURES};
-    separateDepthStencilFeature.separateDepthStencilLayouts = VK_TRUE;
+    VkPhysicalDeviceVulkan11Features vk11Features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES};
+    vk11Features.shaderDrawParameters = VK_TRUE;
 
-    createInfo.pNext = &separateDepthStencilFeature;
+    VkPhysicalDeviceVulkan12Features vk12Features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
+    vk12Features.separateDepthStencilLayouts = VK_TRUE;
+
+    VkPhysicalDeviceVulkan13Features vk13Features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES};
+    vk13Features.synchronization2 = VK_TRUE;
+
+    deviceInfo.pNext = &vk11Features;
+    vk11Features.pNext = &vk12Features;
+    vk12Features.pNext = &vk13Features;
 
     VkDevice device;
-    if (vkCreateDevice(physicalDevice->handle, &createInfo, NULL, &device)){
+    if (vkCreateDevice(physicalDevice->handle, &deviceInfo, NULL, &device)){
         printf("Failed to create Logical Device\n");
         exit(EXIT_FAILURE);
     }

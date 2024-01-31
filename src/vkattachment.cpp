@@ -7,7 +7,7 @@
 #include "vkdevice.h"
 #include "int.h"
 
-Image createDepthImage(
+DeviceImage createDepthImage(
     VmaAllocator allocator,
     VkDevice device,
     VkPhysicalDevice physicalDevice,
@@ -49,8 +49,8 @@ Image createDepthImage(
     allocInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
     allocInfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
 
-    Image depthImage = {};
-    if (vmaCreateImage(allocator, &imageInfo, &allocInfo, &depthImage.handle, &depthImage.alloc, NULL)){
+    DeviceImage depthImage = {};
+    if (vmaCreateImage(allocator, &imageInfo, &allocInfo, &depthImage.handle, &depthImage.alloc, &depthImage.info)){
         fprintf(stderr, "Failed to allocate Image\n");
         exit(EXIT_FAILURE);
     }
@@ -77,7 +77,7 @@ Image createDepthImage(
     return depthImage;
 }
 
-Image createSamplingImage(
+DeviceImage createSamplingImage(
     VmaAllocator allocator, 
     VkDevice device, 
     VkFormat format, 
@@ -103,8 +103,8 @@ Image createSamplingImage(
     allocInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
     allocInfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
 
-    Image samplingImage = {};
-    if (vmaCreateImage(allocator, &imageInfo, &allocInfo, &samplingImage.handle, &samplingImage.alloc, NULL)){
+    DeviceImage samplingImage = {};
+    if (vmaCreateImage(allocator, &imageInfo, &allocInfo, &samplingImage.handle, &samplingImage.alloc, &samplingImage.info)){
         fprintf(stderr, "Failed to allocate Image\n");
         exit(EXIT_FAILURE);
     }

@@ -1,14 +1,35 @@
 #pragma once
 #include <vulkan/vulkan.h>
+#include "vk_mem_alloc.h"
 #include "int.h"
-#include "vkstate.h"
+
+typedef struct {
+    VkBuffer handle;
+    VmaAllocation alloc;
+    VmaAllocationInfo info;
+} Buffer;
+
+typedef struct {
+    VkImage handle;
+    VmaAllocation alloc;
+    VmaAllocationInfo info;
+    VkImageView view;
+    VkExtent2D extent;
+    VkFormat format;
+} DeviceImage;
+
+typedef struct MemoryTransferEssentials {
+    VkDevice device;
+    VkCommandPool cmdPool;
+    VkQueue queue;
+} MemoryTransferEssentials;
 
 VmaAllocator createAllocator(VkDevice device, VkInstance instance, VkPhysicalDevice physicalDevice);
 VkSampler createSampler(VkDevice device, float maxAnisotropy);
-Texture createDeviceTexture(
+DeviceImage createDeviceTexture(
     VkDevice device, 
     VmaAllocator allocator, 
-    size_t texWidth, size_t texHeight);
+    u32 texWidth, u32 texHeight);
 Buffer createDeviceBuffer(
     VmaAllocator allocator,
     VkDeviceSize bufferSize);

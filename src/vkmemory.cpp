@@ -24,10 +24,10 @@ VmaAllocator createAllocator(VkDevice device, VkInstance instance, VkPhysicalDev
     return allocator;
 }
 
-Texture createDeviceTexture(
+DeviceImage createDeviceTexture(
     VkDevice device, 
     VmaAllocator allocator, 
-    size_t texWidth, size_t texHeight)
+    u32 texWidth, u32 texHeight)
 {
     VkImageCreateInfo imageInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
     imageInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -46,7 +46,7 @@ Texture createDeviceTexture(
     VmaAllocationCreateInfo allocInfo = {};
     allocInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
 
-    Texture tex = {};
+    DeviceImage tex = {};
     if (vmaCreateImage(allocator, &imageInfo, &allocInfo, &tex.handle, &tex.alloc, &tex.info))
     {
         fprintf(stderr, "Failed to create Device Image\n");
@@ -69,6 +69,9 @@ Texture createDeviceTexture(
         exit(EXIT_FAILURE);
     }
 
+    tex.format = VK_FORMAT_R8G8B8A8_SRGB;
+    tex.extent = {.width = texWidth, .height = texHeight};
+
     return tex;
 }
 
@@ -80,7 +83,8 @@ Buffer createDeviceBuffer(
     bufferInfo.size = bufferSize;
     bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | 
         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | 
-        VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+        VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
+        VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
 
     VmaAllocationCreateInfo allocInfo = {};
     allocInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;

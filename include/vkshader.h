@@ -20,8 +20,9 @@ typedef struct UniformBufferData{
     mat4 projection;
 } UniformBufferData;
 
-typedef struct PushConstant{
-    mat4 viewProjection;
+typedef struct PushConstant{//Max 128 bytes
+    mat4 viewProjection;//64 bytes
+    u32 textureIndex;
 } PushConstant;
 
 typedef struct Matrix4{

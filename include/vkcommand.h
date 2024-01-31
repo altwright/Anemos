@@ -6,7 +6,7 @@
 
 VkCommandPool createCommandPool(VkDevice device, uint32_t queueIndex, VkCommandPoolCreateFlags createFlags);
 void recordModelDrawCommand(
-    VkCommandBuffer commandBuffer, 
+    VkCommandBuffer cmdBuffer, 
     VkRenderPass renderPass, 
     VkFramebuffer framebuffer, 
     PipelineDetails graphicsPipeline,
@@ -14,10 +14,10 @@ void recordModelDrawCommand(
     PushConstant pushConstant,
     VkDescriptorSet descriptorSet,
     VkBuffer deviceBuffer,
-    VkDeviceSize vertexBufferOffset,
-    u32 vertexCount,
-    VkDeviceSize indexBufferOffset,
-    u32 indexCount);
+    size_t vertexBufferOffset,
+    size_t indexBufferOffset,
+    size_t drawCmdsOffset,
+    size_t drawCmdsCount);
 void submitDrawCommand(
     VkQueue queue, 
     VkCommandBuffer commandBuffer, 
