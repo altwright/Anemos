@@ -84,7 +84,7 @@ DescriptorSets allocateDescriptorSets(VkDevice device, VkDescriptorSetLayout lay
 void updateUniformBuffer(Buffer *uniformBuffer, VkDeviceSize offset, ModelInfo *modelInfo)
 {
     u8 *mappedBuffer = (u8*)uniformBuffer->info.pMappedData + offset;
-    memcpy(mappedBuffer, modelInfo->worldMatrix, sizeof(mat4));
+    memcpy(mappedBuffer, modelInfo->modelMatrix, sizeof(mat4));
 }
 
 VkShaderModule createShaderModule(VkDevice device, uint32_t *code, size_t numBytes)

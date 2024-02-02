@@ -53,7 +53,7 @@ Matrix4 cam_genViewMatrix(CameraControls *cam)
 Matrix4 cam_genProjectionMatrix(CameraControls *cam, VkExtent2D renderArea)
 {
     Matrix4 proj = {};
-    glm_perspective(glm_rad(45.0f), renderArea.width / (float)renderArea.height, 0.1f, 10.0f, proj.matrix);
+    glm_perspective(glm_rad(45.0f), renderArea.width / (float)renderArea.height, 0.1f, 128.0f, proj.matrix);
     proj.matrix[1][1] *= -1;//Originally designed for OpenGL, so must be inverted
     return proj;
 }

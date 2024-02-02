@@ -288,3 +288,12 @@ TextureInfo stageModelTexture(cgltf_data *modelData, u8* stagingBuffer)
 
     return texInfo;
 }
+
+void getModelMatrix(mat4 outModelMatrix, cgltf_data *modelData)
+{
+    cgltf_node* node = modelData->scene->nodes[0];
+    if (node->has_scale)
+    {
+        glm_scale(outModelMatrix, node->scale);
+    }
+}

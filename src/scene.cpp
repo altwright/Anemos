@@ -163,16 +163,18 @@ SceneInfo loadSceneToDevice(
 
     submitSingleTimeCommandBuffer(device, cmdPool, cmdBuffer, queue);
 
-    cgltf_free(surfaceData);
-    cgltf_free(characterData);
-
     SceneInfo sceneInfo = {};
     sceneInfo.vtxBufOffset = vtxBufOffset;
     sceneInfo.idxBufOffset = idxBufOffset;
     sceneInfo.drawCmdsOffset = drawCmdsOffset;
     sceneInfo.drawCmdsCount = NUM_ELEMENTS(indirectDrawCmds);
-    sceneInfo.surfaceModelInfo = {.worldMatrix = GLM_MAT4_IDENTITY_INIT, .tex = surfaceTex};
-    sceneInfo.characterModelInfo = {.worldMatrix = GLM_MAT4_IDENTITY_INIT, .tex = characterTex};
+    sceneInfo.surfaceModelInfo = {.modelMatrix = GLM_MAT4_IDENTITY_INIT, .tex = surfaceTex};
+    getModelMatrix(sceneInfo.surfaceModelInfo.modelMatrix, surfaceData);
+    sceneInfo.characterModelInfo = {.modelMatrix = GLM_MAT4_IDENTITY_INIT, .tex = characterTex};
+    getModelMatrix(sceneInfo.characterModelInfo.modelMatrix, characterData);
+
+    cgltf_free(surfaceData);
+    cgltf_free(characterData);
 
     return sceneInfo;
 }

@@ -16,7 +16,7 @@ typedef struct{
 } TextureInfo;
 
 typedef struct{
-    mat4 worldMatrix;
+    mat4 modelMatrix;
     DeviceImage tex;
 } ModelInfo;
 
@@ -25,3 +25,4 @@ cgltf_data* loadglTFData(const char *glbFilepath);
 ModelAttributeInfo stageModelVertexAttributes(cgltf_data *modelData, u8* stagingBuffer);
 ModelAttributeInfo stageModelIndices(cgltf_data* modelData, u8* stagingBuffer);
 TextureInfo stageModelTexture(cgltf_data *modelData, u8* stagingBuffer);
+void getModelMatrix(mat4 outModelMatrix, cgltf_data *modelData);
