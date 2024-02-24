@@ -173,8 +173,204 @@ SceneInfo loadSceneToDevice(
     sceneInfo.characterModelInfo = {.modelMatrix = GLM_MAT4_IDENTITY_INIT, .tex = characterTex};
     getModelMatrix(sceneInfo.characterModelInfo.modelMatrix, characterData);
 
+    sceneInfo.surfaceVoxels = calcSurfaceVoxels(surfaceData, sceneInfo.surfaceModelInfo.modelMatrix);
+
     cgltf_free(surfaceData);
     cgltf_free(characterData);
 
     return sceneInfo;
+}
+
+void freeSceneInfo(SceneInfo *info)
+{
+    free(info->surfaceVoxels.data);
+}
+
+Voxels calcSurfaceVoxels(cgltf_data *surfaceData, mat4 modelMatrix)
+{
+    cgltf_mesh* mesh = surfaceData->scene->nodes[0]->mesh;
+    cgltf_primitive primitive = mesh->primitives[0];
+    cgltf_accessor* verticesAccess = NULL;
+
+    for (size_t i = 0; i < primitive.attributes_count; i++)
+    {
+        cgltf_attribute attr = primitive.attributes[i];
+
+        switch (attr.type)
+        {
+        case cgltf_attribute_type_position:
+            verticesAccess = attr.data;
+            break;
+        default:
+            break;
+        }
+    }
+
+    u8 *binData = (u8*)surfaceData->bin;
+    vec3 *verticesData = (vec3*)(binData + verticesAccess->buffer_view->offset + verticesAccess->offset);
+    u16 *indicesData = (u16*)(binData + primitive.indices->buffer_view->offset + primitive.indices->offset);
+
+    Voxels voxels = {
+        .cols = 2,
+        .rows = 2,
+        .depth = 2,
+        .origin = {-8.0f, 8.0f, -8.0f},//Nearest upper left corner
+        .voxWidth = 8.0f,
+        .voxHeight = 8.0f,
+        .voxLength = 8.0f
+    };
+
+    u64 numVoxels = voxels.cols*voxels.rows*voxels.depth;
+    u64 storedIndicesMaxDataSize = 3 * 3 * primitive.indices->count * sizeof(u16);//A triangle can cross into three voxels max, and each triangle is three indices
+
+    voxels.dataSize = numVoxels * sizeof(u16)//For the voxel indices into the data array 
+        + storedIndicesMaxDataSize
+        + verticesAccess->count * sizeof(vec3)//Store a copy of the transformed vertices, since we can't read them from the staging buffer
+        + numVoxels * sizeof(u16);//Temporary counter array
+    
+    voxels.data = (u8*)malloc(sizeof(u8)*voxels.dataSize);
+    if (!voxels.data)
+    {
+        fprintf(stderr, "Failed to allocate Surface Test Voxel Data");
+        abort();
+    }
+
+    memset(voxels.data, 0, voxels.dataSize);
+
+    //Store the copy of the vertex buffer after the index array and stored indices
+    u64 transformedVerticesIdx = sizeof(u16)*numVoxels + storedIndicesMaxDataSize;
+    vec3 *transformedVertices = (vec3*)(voxels.data + transformedVerticesIdx);
+
+    //Pre-transform all vertices into model-space
+    for(u64 i = 0; i < verticesAccess->count; i++)
+    {
+        glm_mat4_mulv3(modelMatrix, verticesData[i], 0.0f, transformedVertices[i]);
+    }
+
+    voxels.transformedVerticesIdx = transformedVerticesIdx;
+
+    u16 *voxelIndicesCounts = (u16*)voxels.data;
+
+    //Count how many indices fall into each voxel
+    for(u64 i = 0; i < primitive.indices->count; i += 3)
+    {
+        //Used to avoid storing an indice in the same voxel
+        int prevVoxelIdxs[3] = {-1, -1, -1};
+
+        for(u64 vtx = 0; vtx < 3; vtx++)
+        {
+            float x = verticesData[indicesData[i + vtx]][0];
+            float y = verticesData[indicesData[i + vtx]][1];
+            float z = verticesData[indicesData[i + vtx]][2];
+
+            int colIdx = -1, rowIdx = -1, depthIdx = -1;
+
+            if (x >= voxels.origin[0] && x < (voxels.origin[0] + voxels.voxWidth*voxels.cols))
+            {
+                colIdx = (x - voxels.origin[0])/(voxels.voxWidth);
+            }
+
+            if (y > (voxels.origin[1] - voxels.voxHeight*voxels.rows) && y <= voxels.origin[1])
+            {
+                rowIdx = (voxels.origin[1] - y)/(voxels.voxHeight);
+            }
+
+            if (z >= voxels.origin[2] && z < (voxels.origin[2] + voxels.voxLength*voxels.depth))
+            {
+                depthIdx = (z - voxels.origin[2])/(voxels.voxLength);
+            }
+
+            if (colIdx >= 0 && rowIdx >= 0 && depthIdx >= 0)
+            {
+                int voxelIdx = colIdx*(voxels.rows*voxels.depth) + rowIdx*(voxels.depth) + depthIdx;
+                bool uniqueVoxel = true;
+
+                for (size_t j = 0; j < vtx; j++)
+                {
+                    if (voxelIdx == prevVoxelIdxs[j])
+                        uniqueVoxel = false;
+                }
+
+                if (uniqueVoxel)
+                {
+                    voxelIndicesCounts[voxelIdx] += 3;
+                    prevVoxelIdxs[vtx] = voxelIdx;
+                }
+            }
+        }
+    }
+
+    u32 voxelIndicesIdx = 0;
+    for (u64 i = 0; i < numVoxels; i++)
+    {
+        u16 count = voxelIndicesCounts[i];
+        voxelIndicesCounts[i] = voxelIndicesIdx;//They now become absolute indices instead of relative
+        voxelIndicesIdx += count;
+    }
+
+    voxels.storedIndicesCount = voxelIndicesIdx;
+
+    u16 *voxelIndicesCounter = (u16*)(voxels.data + transformedVerticesIdx + sizeof(vec3)*verticesAccess->count);//Fit temporary counter on the end of the data buffer
+    u16 *voxelIndices = (u16*)(voxels.data + sizeof(u16)*numVoxels);//Skip past the index array
+
+    for (u64 i = 0; i < primitive.indices->count; i += 3)
+    {
+        int prevVoxelIdxs[3] = {-1, -1, -1};
+
+        for (u64 vtx = 0; vtx < 3; vtx++)
+        {
+            float x = verticesData[indicesData[i + vtx]][0];
+            float y = verticesData[indicesData[i + vtx]][1];
+            float z = verticesData[indicesData[i + vtx]][2];
+
+            int colIdx = -1, rowIdx = -1, depthIdx = -1;
+
+            if (x >= voxels.origin[0] && x < (voxels.origin[0] + voxels.voxWidth*voxels.cols))
+            {
+                colIdx = (x - voxels.origin[0])/(voxels.voxWidth);
+            }
+
+            if (y > (voxels.origin[1] - voxels.voxHeight*voxels.rows) && y <= voxels.origin[1])
+            {
+                rowIdx = (voxels.origin[1] - y)/(voxels.voxHeight);
+            }
+
+            if (z >= voxels.origin[2] && z < (voxels.origin[2] + voxels.voxLength*voxels.depth))
+            {
+                depthIdx = (z - voxels.origin[2])/(voxels.voxLength);
+            }
+
+            if (colIdx >= 0 && rowIdx >= 0 && depthIdx >= 0)//If it lies within the voxels
+            {
+                int voxelIdx = colIdx*(voxels.rows*voxels.depth) + rowIdx*(voxels.depth) + depthIdx;
+                bool uniqueVoxel = true;
+
+                for (size_t j = 0; j < vtx; j++)
+                {
+                    if (voxelIdx == prevVoxelIdxs[j])
+                        uniqueVoxel = false;
+                }
+
+                if (uniqueVoxel)
+                {
+                    size_t indicesIdx = voxelIndicesCounts[voxelIdx];
+                    voxelIndices[indicesIdx + voxelIndicesCounter[voxelIdx]] = indicesData[i];
+                    voxelIndices[indicesIdx + voxelIndicesCounter[voxelIdx] + 1] = indicesData[i + 1];
+                    voxelIndices[indicesIdx + voxelIndicesCounter[voxelIdx] + 2] = indicesData[i + 2];
+                    voxelIndicesCounter[voxelIdx] += 3;
+                }
+            }
+        }
+    }
+
+// #ifndef NDEBUG
+//     printf("\nStored Indices: %d\n", voxels.storedIndicesCount);
+//     printf("\tVoxel: Indices Index\n");
+//     for (int i = 0; i < numVoxels; i++)
+//     {
+//         printf("\t%d: %d\n", i, voxelIndicesCounts[i]);
+//     }
+// #endif
+
+    return voxels;
 }

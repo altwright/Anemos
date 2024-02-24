@@ -87,6 +87,12 @@ void updateUniformBuffer(Buffer *uniformBuffer, VkDeviceSize offset, ModelInfo *
     memcpy(mappedBuffer, modelInfo->modelMatrix, sizeof(mat4));
 }
 
+void updateUniformBuffer(Buffer *uniformBuffer, VkDeviceSize offset, mat4 worldMatrix)
+{
+    u8 *mappedBuffer = (u8*)uniformBuffer->info.pMappedData + offset;
+    memcpy(mappedBuffer, worldMatrix, sizeof(mat4));
+}
+
 VkShaderModule createShaderModule(VkDevice device, uint32_t *code, size_t numBytes)
 {
     VkShaderModuleCreateInfo createInfo{};

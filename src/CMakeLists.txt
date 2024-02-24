@@ -19,4 +19,5 @@ target_sources(anemos PRIVATE
     input.cpp
     controls.cpp
     scene.cpp
+    physics.cpp
 )

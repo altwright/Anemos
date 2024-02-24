@@ -12,6 +12,7 @@
 #include "input.h"
 #include "controls.h"
 #include "scene.h"
+#include "timing.h"
 
 int main(int, char**)
 {
@@ -35,7 +36,7 @@ int main(int, char**)
 
     VulkanState vk = initVulkanState(&window, &userConfig);
 
-    SceneInfo sceneInfo = loadSceneToDevice(
+    SceneInfo scene = loadSceneToDevice(
         "./models/surface.glb",
         "./models/pompeii.glb",
         vk.stagingBuffer,
@@ -45,12 +46,13 @@ int main(int, char**)
         *vk.graphicsCmdPools,
         vk.graphicsQueue);
 
+    size_t uniformBufferOffset = vk.physicalDevice.properties.limits.minUniformBufferOffsetAlignment;
     DescriptorSets descriptorSets = allocateDescriptorSets(vk.device, vk.descriptorSetLayout, vk.descriptorPool);
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
         VkDescriptorBufferInfo uniformBufferInfo = {};
         uniformBufferInfo.buffer = vk.uniformBuffer.handle;
-        uniformBufferInfo.offset = i*vk.physicalDevice.properties.limits.minUniformBufferOffsetAlignment;
+        uniformBufferInfo.offset = i*uniformBufferOffset;
         uniformBufferInfo.range = sizeof(mat4);
 
         VkWriteDescriptorSet ubDescriptorWrite = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
@@ -63,11 +65,11 @@ int main(int, char**)
 
         VkDescriptorImageInfo surfaceTexDesc = {};
         surfaceTexDesc.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        surfaceTexDesc.imageView = sceneInfo.surfaceModelInfo.tex.view;
+        surfaceTexDesc.imageView = scene.surfaceModelInfo.tex.view;
         surfaceTexDesc.sampler = vk.sampler;
 
         VkDescriptorImageInfo characterTexDesc = surfaceTexDesc;
-        characterTexDesc.imageView = sceneInfo.characterModelInfo.tex.view;
+        characterTexDesc.imageView = scene.characterModelInfo.tex.view;
 
         VkDescriptorImageInfo texDescriptors[] = {surfaceTexDesc, characterTexDesc};
         VkWriteDescriptorSet texDescriptorWrite = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
@@ -94,9 +96,16 @@ int main(int, char**)
 
     PushConstant pushConstant = {};
     Matrix4 projection = cam_genProjectionMatrix(&cam, vk.swapchain.extent);
+    s64 prevTime_ns = getCurrentTime_ns();
+
+    Character character = {.pos = {0.0f, 3.0f, 0.0f}, .vel_m_s = GLM_VEC3_ZERO_INIT};
+
     u32 currentFrame = 0;
     while (!glfwWindowShouldClose(window.handle))
     {
+        s64 currentTime_ns = getCurrentTime_ns();
+        s64 timeDiff_ns = currentTime_ns - prevTime_ns;
+
         cam_processInput(&window);
 
         vkWaitForFences(vk.device, 1, &vk.frameSyncers[currentFrame].inFlight, VK_TRUE, UINT64_MAX);
@@ -136,17 +145,24 @@ int main(int, char**)
         vkResetCommandPool(vk.device, vk.graphicsCmdPools[currentFrame], 0);
 
         Matrix4 view = cam_genViewMatrix(&cam);
-        glm_mat4_mul_sse2(projection.matrix, view.matrix, pushConstant.viewProjection);
+        glm_mat4_mul_avx(projection.matrix, view.matrix, pushConstant.viewProjection);
+
+        updateCharacterPhysics(&character, timeDiff_ns);
+        applyCharacterSurfaceCollision(&character, &scene.surfaceVoxels);
 
         updateUniformBuffer(
             &vk.uniformBuffer, 
-            currentFrame*vk.physicalDevice.properties.limits.minUniformBufferOffsetAlignment, 
-            &sceneInfo.surfaceModelInfo);
+            currentFrame*uniformBufferOffset, 
+            &scene.surfaceModelInfo);
+
+        mat4 characterWorldMatrix = {};
+        glm_translate_make(characterWorldMatrix, character.pos);
+        glm_mat4_mul_avx(scene.characterModelInfo.modelMatrix, characterWorldMatrix, characterWorldMatrix);
 
         updateUniformBuffer(
             &vk.uniformBuffer, 
-            currentFrame*vk.physicalDevice.properties.limits.minUniformBufferOffsetAlignment + sizeof(mat4), 
-            &sceneInfo.characterModelInfo);
+            currentFrame*uniformBufferOffset + sizeof(mat4), 
+            characterWorldMatrix);
 
         recordModelDrawCommand(
             graphicsCmdBuffers[currentFrame],
@@ -157,9 +173,9 @@ int main(int, char**)
             pushConstant,
             descriptorSets.handles[currentFrame],
             vk.deviceBuffer.handle,
-            sceneInfo.vtxBufOffset,
-            sceneInfo.idxBufOffset,
-            sceneInfo.drawCmdsOffset, sceneInfo.drawCmdsCount);
+            scene.vtxBufOffset,
+            scene.idxBufOffset,
+            scene.drawCmdsOffset, scene.drawCmdsCount);
 
         submitDrawCommand(
             vk.graphicsQueue,
@@ -200,6 +216,8 @@ int main(int, char**)
             exit(EXIT_FAILURE);
         }
             
+        prevTime_ns = currentTime_ns;
+
         currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 
         glfwPollEvents();
@@ -207,13 +225,15 @@ int main(int, char**)
 
     vkDeviceWaitIdle(vk.device);
 
-    vkDestroyImageView(vk.device, sceneInfo.surfaceModelInfo.tex.view, NULL);
-    vmaDestroyImage(vk.allocator, sceneInfo.surfaceModelInfo.tex.handle, sceneInfo.surfaceModelInfo.tex.alloc);
-    vkDestroyImageView(vk.device, sceneInfo.characterModelInfo.tex.view, NULL);
-    vmaDestroyImage(vk.allocator, sceneInfo.characterModelInfo.tex.handle, sceneInfo.characterModelInfo.tex.alloc);
+    vkDestroyImageView(vk.device, scene.surfaceModelInfo.tex.view, NULL);
+    vmaDestroyImage(vk.allocator, scene.surfaceModelInfo.tex.handle, scene.surfaceModelInfo.tex.alloc);
+    vkDestroyImageView(vk.device, scene.characterModelInfo.tex.view, NULL);
+    vmaDestroyImage(vk.allocator, scene.characterModelInfo.tex.handle, scene.characterModelInfo.tex.alloc);
 
     destroyWindow(&window);
     destroyVulkanState(&vk);
+
+    freeSceneInfo(&scene);
 
     return 0;
 }

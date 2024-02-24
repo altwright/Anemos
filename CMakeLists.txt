@@ -10,6 +10,8 @@ set_target_properties(anemos PROPERTIES
     COMPILE_WARNING_AS_ERROR ON
 )
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx")
+
 set(GLFW_USE_WAYLAND ON)
 
 target_include_directories(anemos PRIVATE

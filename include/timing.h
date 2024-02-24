@@ -15,11 +15,11 @@
 #define SEC_TO_NS(sec) ((sec)*1000000000)
 
 /// Convert nanoseconds to seconds
-#define NS_TO_SEC(ns)   ((ns)/1000000000)
+#define NS_TO_SEC(ns)   ((ns)/1000000000.0f)
 /// Convert nanoseconds to milliseconds
-#define NS_TO_MS(ns)    ((ns)/1000000)
+#define NS_TO_MS(ns)    ((ns)/1000000.0f)
 /// Convert nanoseconds to microseconds
-#define NS_TO_US(ns)    ((ns)/1000)
+#define NS_TO_US(ns)    ((ns)/1000.0f)
 
 extern timespec START_TIME;
 

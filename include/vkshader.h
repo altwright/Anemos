@@ -39,3 +39,4 @@ VkDescriptorSetLayout createDescriptorSetLayout(VkDevice device);
 VkDescriptorPool createDescriptorPool(VkDevice device);
 DescriptorSets allocateDescriptorSets(VkDevice device, VkDescriptorSetLayout layout, VkDescriptorPool pool);
 void updateUniformBuffer(Buffer *uniformBuffer, VkDeviceSize offset, ModelInfo *model);
+void updateUniformBuffer(Buffer *uniformBuffer, VkDeviceSize offset, mat4 worldMatrix);
